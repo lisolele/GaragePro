@@ -14,7 +14,6 @@ body{
     margin:0;
     font-family:-apple-system, BlinkMacSystemFont, sans-serif;
     background:#f2f2f7;
-    color:#111;
 }
 
 header{
@@ -34,7 +33,6 @@ header{
     margin:auto;
 }
 
-/* CARD */
 .section{
     background:white;
     padding:18px;
@@ -44,7 +42,6 @@ header{
     overflow:hidden;
 }
 
-/* INPUT */
 input,select,button{
     width:100%;
     padding:12px;
@@ -202,9 +199,7 @@ function saveState(){
         inventario: structuredClone(inventario),
         scaffali: structuredClone(scaffali)
     });
-
     redoStack = [];
-    showUndo();
 }
 
 /* ================= UNDO / REDO ================= */
@@ -235,43 +230,21 @@ function redo(){
     render();
 }
 
-/* ================= UNDO UI ================= */
-
-function showUndo(){
-
-    let bar = document.getElementById("undoBar");
-
-    if(!bar){
-        bar = document.createElement("div");
-        bar.id = "undoBar";
-        document.body.appendChild(bar);
-    }
-
-    bar.innerHTML = `
-        ⬅️ Undo (${undoStack.length})
-
-        <button onclick="undo()" style="background:#007aff;border:none;color:white;padding:6px 10px;border-radius:10px;">
-            Undo
-        </button>
-
-        <button onclick="redo()" style="background:#34c759;border:none;color:white;padding:6px 10px;border-radius:10px;">
-            Redo
-        </button>
-
-        ➡️ (${redoStack.length})
-    `;
-}
-
 /* ================= SCAFFALI ================= */
 
 function aggiungiScaffale(){
 
+    const name = $("shelfName").value.trim();
+    if(!name) return alert("Nome scaffale obbligatorio");
+
     saveState();
 
     scaffali.push({
-        nome:$("shelfName").value,
+        nome:name,
         livelli:1
     });
+
+    $("shelfName").value = "";
 
     render();
 }
@@ -281,9 +254,7 @@ function changeLevels(i,delta){
     saveState();
 
     scaffali[i].livelli += delta;
-
-    if(scaffali[i].livelli < 1)
-        scaffali[i].livelli = 1;
+    if(scaffali[i].livelli < 1) scaffali[i].livelli = 1;
 
     inventario.forEach(o=>{
         if(o.shelf==i && o.level>=scaffali[i].livelli){
@@ -298,14 +269,24 @@ function changeLevels(i,delta){
 
 function salva(){
 
+    const nome = $("nome").value.trim();
+    if(!nome) return alert("Nome obbligatorio");
+
+    const shelf = $("selectShelf").value;
+    const level = $("selectLevel").value;
+
+    if(shelf === "" || level === ""){
+        return alert("Seleziona scaffale e ripiano");
+    }
+
     saveState();
 
     inventario.push({
         id:Date.now(),
-        nome:$("nome").value,
+        nome,
         categoria:$("categoria").value,
-        shelf:$("selectShelf").value,
-        level:$("selectLevel").value
+        shelf,
+        level
     });
 
     render();
@@ -350,7 +331,7 @@ function highlight(text, query){
     return text.replace(regex, "<mark>$1</mark>");
 }
 
-/* ================= ITEMS RENDER ================= */
+/* ================= RENDER ITEMS ================= */
 
 function renderItems(){
 
@@ -387,7 +368,7 @@ function renderItems(){
         });
 }
 
-/* ================= SCAFFALI UI ================= */
+/* ================= SCAFFALI ================= */
 
 function renderShelves(){
 
@@ -479,6 +460,12 @@ function updateLevels(){
 $("selectShelf").addEventListener("change", updateLevels);
 
 /* ================= INIT ================= */
+
+function render(){
+    renderShelves();
+    renderItems();
+    updateSelectors();
+}
 
 render();
 
