@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garage Pro</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: #f1f5f9;
+}
+
+header {
+    background: #0f172a;
+    color: white;
+    padding: 15px;
+    text-align: center;
+}
+
+.container {
+    padding: 15px;
+    max-width: 1100px;
+    margin: auto;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+    gap: 10px;
+}
+
+.card {
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+input, select, button {
+    padding: 10px;
+    margin: 5px 0;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background: #22c55e;
+    color: white;
+    border: none;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-radius: 10px;
+    border-collapse: collapse;
+}
+
+th {
+    background: #1e293b;
+    color: white;
+    padding: 10px;
+}
+
+td {
+    padding: 8px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 5px;
+    color: white;
+    font-size: 12px;
+}
+
+img.preview {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.actions button {
+    margin: 2px;
+    padding: 5px;
+}
+
+canvas {
+    margin-top: 20px;
+    background: white;
+    border-radius: 10px;
+    padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h2>🚗 Garage Pro</h2>
+</header>
+
+<div class="container">
+
+<div class="cards">
+    <div class="card">
+        <h3 id="totale">0</h3>
+        <p>Oggetti</p>
+    </div>
+    <div class="card">
+        <h3 id="categorie">0</h3>
+        <p>Categorie</p>
+    </div>
+</div>
+
+<input id="search" placeholder="🔍 Cerca..." onkeyup="filtra()">
+
+<!-- FILTRI -->
+<div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <select id="filtroCategoria" onchange="filtra()"></select>
+
+    <select id="filtroCondizione" onchange="filtra()">
+        <option value="">Tutte le condizioni</option>
+        <option>Nuovo</option>
+        <option>Buono</option>
+        <option>Discreto</option>
+    </select>
+</div>
+
+<h3>Aggiungi / Modifica</h3>
+
+<input id="nome" placeholder="Nome">
+<input id="categoria" placeholder="Categoria">
+<input id="quantita" type="number" placeholder="Quantità">
+
+<select id="condizione">
+    <option>Nuovo</option>
+    <option>Buono</option>
+    <option>Discreto</option>
+</select>
+
+<input id="posizione" placeholder="Posizione">
+
+<input type="file" id="immagine" accept="image/*">
+<img id="anteprima" style="max-width:100px; display:none;">
+
+<button onclick="salvaOggetto()">💾 Salva</button>
+
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Nome</th>
+<th>Categoria</th>
+<th>Qtà</th>
+<th>Condizione</th>
+<th>Posizione</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="tabella"></tbody>
+</table>
+</div>
+
+<canvas id="grafico"></canvas>
+
+</div>
+
+<script>
+
+let inventario = JSON.parse(localStorage.getItem("garage")) || [];
+let editIndex = null;
+let immagineBase64 = null;
+
+const colori = {};
+
+function coloreCategoria(cat) {
+    if (!colori[cat]) {
+        colori[cat] = "#" + Math.floor(Math.random()*16777215).toString(16);
+    }
+    return colori[cat];
+}
+
+// UPLOAD IMMAGINE
+immagine.onchange = function() {
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        immagineBase64 = e.target.result;
+        anteprima.src = immagineBase64;
+        anteprima.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+};
+
+function salvaStorage() {
+    localStorage.setItem("garage", JSON.stringify(inventario));
+}
+
+// SALVA / MODIFICA
+function salvaOggetto() {
+
+    let obj = {
+        nome: nome.value,
+        categoria: categoria.value,
+        quantita: quantita.value,
+        condizione: condizione.value,
+        posizione: posizione.value,
+        immagine: immagineBase64
+    };
+
+    if (!obj.nome) return alert("Inserisci nome");
+
+    if (editIndex !== null) {
+        inventario[editIndex] = obj;
+        editIndex = null;
+    } else {
+        inventario.push(obj);
+    }
+
+    salvaStorage();
+    pulisci();
+    mostra();
+}
+
+// MOSTRA
+function mostra(lista = inventario) {
+    tabella.innerHTML = "";
+
+    lista.forEach((item, i) => {
+        let colore = coloreCategoria(item.categoria);
+
+        tabella.innerHTML += `
+        <tr>
+            <td>${item.immagine ? `<img src="${item.immagine}" class="preview">` : ""}</td>
+            <td>${item.nome}</td>
+            <td><span class="badge" style="background:${colore}">${item.categoria}</span></td>
+            <td>${item.quantita}</td>
+            <td>${item.condizione}</td>
+            <td>${item.posizione}</td>
+            <td class="actions">
+                <button onclick="modifica(${i})">✏️</button>
+                <button onclick="elimina(${i})">❌</button>
+            </td>
+        </tr>`;
+    });
+
+    aggiornaDashboard();
+    aggiornaGrafico();
+    aggiornaFiltri();
+}
+
+// MODIFICA
+function modifica(i) {
+    let item = inventario[i];
+
+    nome.value = item.nome;
+    categoria.value = item.categoria;
+    quantita.value = item.quantita;
+    condizione.value = item.condizione;
+    posizione.value = item.posizione;
+
+    immagineBase64 = item.immagine || null;
+    if (immagineBase64) {
+        anteprima.src = immagineBase64;
+        anteprima.style.display = "block";
+    }
+
+    editIndex = i;
+}
+
+// ELIMINA
+function elimina(i) {
+    inventario.splice(i, 1);
+    salvaStorage();
+    mostra();
+}
+
+// FILTRI
+function aggiornaFiltri() {
+    let select = filtroCategoria;
+    let categorie = [...new Set(inventario.map(i => i.categoria))];
+
+    select.innerHTML = `<option value="">Tutte le categorie</option>`;
+    categorie.forEach(c => {
+        select.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+}
+
+function filtra() {
+    let q = search.value.toLowerCase();
+    let cat = filtroCategoria.value;
+    let cond = filtroCondizione.value;
+
+    let filtrati = inventario.filter(i => {
+
+        let matchRicerca =
+            i.nome.toLowerCase().includes(q) ||
+            i.categoria.toLowerCase().includes(q);
+
+        let matchCategoria = !cat || i.categoria === cat;
+        let matchCondizione = !cond || i.condizione === cond;
+
+        return matchRicerca && matchCategoria && matchCondizione;
+    });
+
+    mostra(filtrati);
+}
+
+// DASHBOARD
+function aggiornaDashboard() {
+    totale.innerText = inventario.length;
+    categorie.innerText = new Set(inventario.map(i => i.categoria)).size;
+}
+
+// GRAFICO
+let chart;
+
+function aggiornaGrafico() {
+    let conteggio = {};
+
+    inventario.forEach(i => {
+        conteggio[i.categoria] = (conteggio[i.categoria] || 0) + 1;
+    });
+
+    let labels = Object.keys(conteggio);
+    let data = Object.values(conteggio);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(grafico, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{ data: data }]
+        }
+    });
+}
+
+// RESET FORM
+function pulisci() {
+    document.querySelectorAll("input").forEach(i => i.value = "");
+    immagineBase64 = null;
+    anteprima.style.display = "none";
+}
+
+// AVVIO
+mostra();
+
+</script>
+
+</body>
+</html>
