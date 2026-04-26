@@ -113,6 +113,10 @@ button{
     gap:6px;
 }
 
+.item.selected{
+    outline:2px solid #007aff;
+}
+
 .item img{
     width:28px;
     height:28px;
@@ -149,7 +153,6 @@ button{
 
 <input type="file" id="itemImg" accept="image/*">
 
-<!-- NUOVO: assegnazione manuale -->
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
@@ -169,7 +172,7 @@ button{
 
 <!-- INVENTARIO -->
 <div class="section">
-<h3>📋 Oggetti (drag & drop opzionale)</h3>
+<h3>📋 Oggetti (drag & sync dropdown)</h3>
 <div id="items"></div>
 </div>
 
@@ -184,6 +187,7 @@ let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
 let chart;
 let shelfImgData = null;
 let itemImgData = null;
+let selectedItemId = null;
 
 function save(){
     localStorage.setItem("garage_drag", JSON.stringify(inventario));
@@ -205,7 +209,7 @@ shelfImg.onchange = e=>{
     r.readAsDataURL(f);
 };
 
-// CREA SCAFFALE
+// SCAFFALI
 function aggiungiScaffale(){
     scaffali.push({
         nome:shelfName.value,
@@ -218,7 +222,6 @@ function aggiungiScaffale(){
     updateSelectors();
 }
 
-// RENDER SCAFFALI
 function renderShelves(){
     shelfView.innerHTML="";
 
@@ -247,7 +250,7 @@ function renderShelves(){
     });
 }
 
-// SELECT SCAFFALE + LIVELLO
+// SELECT SYNC
 function updateSelectors(){
 
     selectShelf.innerHTML="";
@@ -262,6 +265,7 @@ function updateSelectors(){
 }
 
 function updateLevels(){
+
     selectLevel.innerHTML="";
 
     const s=scaffali[selectShelf.value];
@@ -275,12 +279,33 @@ function updateLevels(){
     }
 }
 
-selectShelf.onchange=updateLevels;
+selectShelf.onchange=()=>{
+    updateLevels();
+    syncFromDropdown();
+};
 
-// SALVA OGGETTO
+selectLevel.onchange=syncFromDropdown;
+
+// SYNC DROPDOWN -> ITEM
+function syncFromDropdown(){
+    if(selectedItemId===null) return;
+
+    const i=inventario.find(x=>x.id==selectedItemId);
+    if(!i) return;
+
+    i.shelf=selectShelf.value;
+    i.level=selectLevel.value;
+
+    save();
+    renderItems();
+}
+
+// SALVA
 function salva(){
+    const id=Date.now();
+
     inventario.push({
-        id:Date.now(),
+        id,
         nome:nome.value,
         categoria:categoria.value,
         quantita:quantita.value,
@@ -294,15 +319,17 @@ function salva(){
     updateStats();
 }
 
-// DRAG ITEMS
+// RENDER ITEMS
 function renderItems(){
     items.innerHTML="";
 
     inventario.forEach(i=>{
 
         const div=document.createElement("div");
-        div.className="item";
+        div.className="item"+(selectedItemId===i.id?" selected":"");
         div.draggable=true;
+
+        div.onclick=()=>selectItem(i.id);
 
         div.ondragstart=e=>e.dataTransfer.setData("id",i.id);
 
@@ -316,21 +343,34 @@ function renderItems(){
     });
 }
 
+// SELECT ITEM
+function selectItem(id){
+    selectedItemId=id;
+
+    const i=inventario.find(x=>x.id==id);
+    if(!i) return;
+
+    selectShelf.value=i.shelf||0;
+    updateLevels();
+    selectLevel.value=i.level||0;
+
+    renderItems();
+}
+
 // DROP
-function dropItem(e,shelfIndex,levelIndex){
+function dropItem(e,si,li){
 
     const id=e.dataTransfer.getData("id");
 
     inventario.forEach(i=>{
         if(i.id==id){
-            i.shelf=shelfIndex;
-            i.level=levelIndex;
+            i.shelf=si;
+            i.level=li;
         }
     });
 
     save();
     renderItems();
-    updateStats();
 }
 
 // STATS
@@ -339,7 +379,6 @@ function updateStats(){
     cat.innerText=[...new Set(inventario.map(i=>i.categoria))].length;
 }
 
-// INIT
 function init(){
     renderShelves();
     renderItems();
