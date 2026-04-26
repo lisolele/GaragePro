@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garage Pro iOS</title>
+
+<title>Garage Pro</title>
+
+<!-- ICONA iPHONE -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Garage Pro">
 
 <style>
 body{
@@ -143,7 +150,7 @@ button{
 
 <body>
 
-<header>🚗 Garage Pro iOS</header>
+<header>🚗 Garage Pro</header>
 
 <div class="container">
 
@@ -197,7 +204,6 @@ function save(){
     localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
 }
 
-// ===== IMMAGINI =====
 $("itemImg").onchange = e=>{
     const f = e.target.files[0];
     if(!f) return;
@@ -206,8 +212,6 @@ $("itemImg").onchange = e=>{
     r.onload = ev => itemImgData = ev.target.result;
     r.readAsDataURL(f);
 };
-
-// ===== SCAFFALI =====
 
 function aggiungiScaffale(){
 
@@ -265,8 +269,6 @@ function deleteLevel(si,li){
     updateSelectors();
 }
 
-// ===== SCAFFALI RENDER =====
-
 function renderShelves(){
 
     const c = $("shelfView");
@@ -323,8 +325,6 @@ function renderShelves(){
     });
 }
 
-// ===== OGGETTI =====
-
 function salva(){
 
     const nome = $("nome").value.trim();
@@ -365,7 +365,6 @@ function salva(){
     renderShelves();
 }
 
-// DRAG DROP
 function dropItem(e,si,li){
 
     const id = e.dataTransfer.getData("id");
@@ -382,7 +381,6 @@ function dropItem(e,si,li){
     renderShelves();
 }
 
-// LISTA OGGETTI
 function renderItems(){
 
     const c = $("items");
@@ -433,8 +431,6 @@ function deleteItem(id){
     renderShelves();
 }
 
-// ===== DROPDOWN =====
-
 function updateSelectors(){
 
     const s = $("selectShelf");
@@ -469,7 +465,6 @@ function updateLevels(){
 
 $("selectShelf").onchange = updateLevels;
 
-// INIT
 renderShelves();
 renderItems();
 updateSelectors();
