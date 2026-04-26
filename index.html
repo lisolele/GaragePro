@@ -3,323 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garage Pro iOS</title>
+<title>Garage Pro 3D</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <style>
-:root{
-    --bg:#f2f2f7;
-    --card:#ffffffcc;
-    --text:#111;
-    --accent:#007aff;
-    --radius:18px;
-}
-
 body{
     margin:0;
-    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background:var(--bg);
-    color:var(--text);
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:#f2f2f7;
 }
 
 header{
-    padding:18px;
-    text-align:center;
-    font-weight:600;
-    font-size:20px;
-    background:rgba(255,255,255,0.7);
-    backdrop-filter: blur(10px);
-    position:sticky;
+    position:fixed;
     top:0;
-}
-
-.container{padding:15px; max-width:1000px; margin:auto;}
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
-}
-
-.card{
-    background:var(--card);
-    border-radius:var(--radius);
-    padding:15px;
-    text-align:center;
-    box-shadow:0 4px 10px rgba(0,0,0,0.05);
-}
-
-input,select{
     width:100%;
-    padding:12px;
-    margin:5px 0;
-    border-radius:12px;
-    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+    background:rgba(255,255,255,0.7);
+    backdrop-filter:blur(10px);
+    font-weight:600;
+    z-index:10;
+}
+
+#ui{
+    position:fixed;
+    top:60px;
+    left:10px;
+    width:260px;
     background:white;
+    padding:10px;
+    border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.1);
+    z-index:10;
+}
+
+input,button{
+    width:100%;
+    padding:8px;
+    margin:5px 0;
+    border-radius:8px;
+    border:1px solid #ddd;
 }
 
 button{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    background:var(--accent);
+    background:#007aff;
     color:white;
+    border:none;
     font-weight:600;
 }
 
-.section{
-    margin-top:18px;
-    padding:15px;
-    background:white;
-    border-radius:12px;
+#scene{
+    width:100vw;
+    height:100vh;
+    display:block;
 }
-
-.shelfGrid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-    gap:10px;
-    perspective:1000px;
-}
-
-.shelf{
-    background:#f5f5f7;
-    border-radius:12px;
-    padding:10px;
-    transform:rotateX(8deg);
-    box-shadow:0 8px 20px rgba(0,0,0,0.08);
-    min-height:120px;
-    overflow:hidden;
-}
-
-.shelf img{
-    width:100%;
-    height:60px;
-    object-fit:cover;
-    border-radius:10px;
-    margin-bottom:6px;
-}
-
-.badge{
-    background:#007aff;
-    color:white;
-    padding:3px 8px;
-    border-radius:8px;
-    font-size:12px;
-}
-
-.item{
-    padding:6px;
-    margin:4px 0;
-    background:#fff;
-    border-radius:8px;
-    font-size:12px;
-    cursor:grab;
-}
-
-.dropzone{
-    min-height:40px;
-}
-
 </style>
 </head>
 
 <body>
 
-<header>🚗 Garage Pro iOS</header>
+<header>🚗 Garage Pro 3D Warehouse</header>
 
-<div class="container">
+<div id="ui">
 
-<!-- DASHBOARD -->
-<div class="cards">
-    <div class="card">
-        <h2 id="tot">0</h2>
-        <div>Oggetti</div>
-    </div>
-    <div class="card">
-        <h2 id="cat">0</h2>
-        <div>Categorie</div>
-    </div>
-</div>
-
-<!-- OGGETTI -->
-<div class="section">
-<h3>📦 Oggetti</h3>
-
-<input id="nome" placeholder="Nome">
-<input id="categoria" placeholder="Categoria">
-<input id="quantita" type="number" placeholder="Quantità">
-
-<select id="scaffale"></select>
-
-<button onclick="salva()">Salva oggetto</button>
-</div>
-
-<!-- SCAFFALI -->
-<div class="section">
-<h3>🗄️ Scaffali 3D</h3>
-
+<h3>🗄️ Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<input type="file" id="shelfImg">
-<input id="levels" type="number" placeholder="Numero ripiani">
+<button onclick="addShelf()">Crea scaffale</button>
 
-<button onclick="aggiungiScaffale()">Crea scaffale</button>
+<h3>📦 Oggetti</h3>
+<input id="itemName" placeholder="Nome oggetto">
+<button onclick="addItem()">Aggiungi oggetto</button>
 
-<div id="shelfView" class="shelfGrid"></div>
-</div>
-
-<!-- INVENTARIO -->
-<div class="section">
-<h3>📋 Inventario (drag & drop)</h3>
-<div id="items"></div>
-</div>
-
-<!-- GRAFICO -->
-<canvas id="chart"></canvas>
+<p style="font-size:12px;opacity:0.6">
+Click su oggetti per selezionarli
+</p>
 
 </div>
+
+<canvas id="scene"></canvas>
 
 <script>
 
-let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
-let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
-let chart;
-let shelfImgData = null;
-
-// SAVE
-function save(){
-    localStorage.setItem("garage_drag", JSON.stringify(inventario));
-    localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
-}
-
-// IMAGE SCAFFALE
-shelfImg.onchange = e=>{
-    let file = e.target.files[0];
-    let reader = new FileReader();
-    reader.onload = ev => shelfImgData = ev.target.result;
-    reader.readAsDataURL(file);
-};
-
-// CREA SCAFFALE
-function aggiungiScaffale(){
-    scaffali.push({
-        nome:shelfName.value,
-        livelli:parseInt(levels.value || 1),
-        img:shelfImgData
-    });
-
-    save();
-    renderShelves();
-    updateSelect();
-}
-
-// RENDER SCAFFALI
-function renderShelves(){
-    shelfView.innerHTML = "";
-
-    scaffali.forEach((s,i)=>{
-
-        let div = document.createElement("div");
-        div.className = "shelf dropzone";
-
-        div.ondragover = e => e.preventDefault();
-        div.ondrop = e => dropItem(e,i);
-
-        div.innerHTML = `
-            ${s.img ? `<img src="${s.img}">` : ""}
-            <div><b>${s.nome}</b></div>
-            <div class="badge">${s.livelli} livelli</div>
-        `;
-
-        shelfView.appendChild(div);
-    });
-}
-
-// AGGIUNGI OGGETTO
-function salva(){
-    inventario.push({
-        id: Date.now(),
-        nome: nome.value,
-        categoria: categoria.value,
-        quantita: quantita.value,
-        shelf: null
-    });
-
-    save();
-    renderItems();
-}
-
-// RENDER OGGETTI
-function renderItems(){
-    items.innerHTML = "";
-
-    inventario.forEach(i=>{
-        let div = document.createElement("div");
-        div.className = "item";
-        div.draggable = true;
-
-        div.ondragstart = e => e.dataTransfer.setData("id", i.id);
-
-        div.innerHTML = `${i.nome} (${i.categoria}) - ${i.quantita}`;
-
-        items.appendChild(div);
-    });
-}
-
-// DROP
-function dropItem(e, shelfIndex){
-    let id = e.dataTransfer.getData("id");
-
-    inventario.forEach(i=>{
-        if(i.id == id){
-            i.shelf = scaffali[shelfIndex].nome;
-        }
-    });
-
-    save();
-    renderItems();
-}
-
-// SELECT
-function updateSelect(){
-    scaffale.innerHTML = "";
-
-    scaffali.forEach(s=>{
-        let opt = document.createElement("option");
-        opt.value = s.nome;
-        opt.text = s.nome;
-        scaffale.appendChild(opt);
-    });
-}
-
-// GRAFICO
-function grafico(){
-    let m = {};
-
-    inventario.forEach(i=>{
-        m[i.categoria] = (m[i.categoria] || 0) + 1;
-    });
-
-    if(chart) chart.destroy();
-
-    chart = new Chart(chart.getContext('2d'),{
-        type:'bar',
-        data:{
-            labels:Object.keys(m),
-            datasets:[{data:Object.values(m)}]
-        }
-    });
-}
-
-// INIT
-function init(){
-    renderShelves();
-    renderItems();
-    updateSelect();
-}
+let scene, camera, renderer;
+let shelves = [];
+let items = [];
+let selected = null;
 
 init();
+animate();
+
+function init(){
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf2f2f7);
+
+    camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth/window.innerHeight,
+        0.1,
+        1000
+    );
+
+    camera.position.set(0,6,10);
+
+    renderer = new THREE.WebGLRenderer({
+        canvas:document.getElementById("scene"),
+        antialias:true
+    });
+
+    renderer.setSize(window.innerWidth,window.innerHeight);
+
+    // LUCE
+    const light = new THREE.DirectionalLight(0xffffff,1);
+    light.position.set(5,10,5);
+    scene.add(light);
+
+    scene.add(new THREE.AmbientLight(0xffffff,0.4));
+
+    // GRIGLIA MAGAZZINO
+    const grid = new THREE.GridHelper(20,20);
+    scene.add(grid);
+
+    window.addEventListener("click", onClick);
+}
+
+// 📦 SCAFFALE
+function addShelf(){
+
+    const geo = new THREE.BoxGeometry(3,1,1);
+    const mat = new THREE.MeshStandardMaterial({color:0x888888});
+
+    const shelf = new THREE.Mesh(geo,mat);
+
+    shelf.position.x = Math.random()*6-3;
+    shelf.position.z = Math.random()*6-3;
+
+    shelf.userData = {
+        type:"shelf",
+        name:shelfName.value || "Scaffale"
+    };
+
+    scene.add(shelf);
+    shelves.push(shelf);
+}
+
+// 📦 OGGETTO
+function addItem(){
+
+    const geo = new THREE.SphereGeometry(0.3,16,16);
+    const mat = new THREE.MeshStandardMaterial({color:0x007aff});
+
+    const item = new THREE.Mesh(geo,mat);
+
+    item.position.x = Math.random()*6-3;
+    item.position.z = Math.random()*6-3;
+
+    item.userData = {
+        type:"item",
+        name:itemName.value || "Oggetto"
+    };
+
+    scene.add(item);
+    items.push(item);
+}
+
+// 🖱️ CLICK SELECT
+function onClick(event){
+
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX/window.innerWidth)*2-1;
+    mouse.y = -(event.clientY/window.innerHeight)*2+1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse,camera);
+
+    const objects = [...shelves,...items];
+
+    const intersects = raycaster.intersectObjects(objects);
+
+    if(intersects.length > 0){
+
+        const obj = intersects[0].object;
+
+        if(selected){
+            selected.material.emissive?.set(0x000000);
+        }
+
+        selected = obj;
+
+        if(obj.material.emissive){
+            obj.material.emissive.set(0x333333);
+        }
+
+        console.log("Selezionato:", obj.userData.name);
+    }
+}
+
+// 🎮 LOOP
+function animate(){
+
+    requestAnimationFrame(animate);
+
+    // rotazione leggera scena (effetto “gioco”)
+    scene.rotation.y += 0.001;
+
+    renderer.render(scene,camera);
+}
+
+// resize
+window.addEventListener("resize",()=>{
+
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth,window.innerHeight);
+});
 
 </script>
 
