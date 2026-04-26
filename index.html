@@ -5,169 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Garage Pro iOS</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-:root{
-    --bg:#f2f2f7;
-    --card:#ffffffcc;
-    --text:#111;
-    --accent:#007aff;
-    --radius:18px;
-    --danger:#ff3b30;
-}
-
 body{
     margin:0;
-    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background:var(--bg);
-    color:var(--text);
+    font-family:-apple-system, sans-serif;
+    background:#f2f2f7;
 }
 
 header{
-    padding:18px;
+    padding:16px;
     text-align:center;
-    font-weight:600;
-    font-size:20px;
-    background:rgba(255,255,255,0.7);
-    backdrop-filter: blur(10px);
+    background:white;
     position:sticky;
     top:0;
+    font-weight:600;
 }
 
-.container{padding:15px; max-width:1000px; margin:auto;}
+.container{padding:12px; max-width:900px; margin:auto;}
 
-.cards{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
-}
-
-.card{
-    background:var(--card);
-    border-radius:var(--radius);
-    padding:15px;
-    text-align:center;
-    box-shadow:0 4px 10px rgba(0,0,0,0.05);
-}
-
-input,select{
-    width:100%;
-    padding:12px;
-    margin:5px 0;
-    border-radius:12px;
-    border:1px solid #ddd;
+.section{
     background:white;
+    padding:12px;
+    margin-top:12px;
+    border-radius:12px;
+}
+
+input,select,button{
+    width:100%;
+    padding:10px;
+    margin-top:6px;
+    border-radius:10px;
+    border:1px solid #ddd;
 }
 
 button{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    background:var(--accent);
+    background:#007aff;
     color:white;
-    font-weight:600;
-}
-
-.section{
-    margin-top:18px;
-    padding:15px;
-    background:white;
-    border-radius:12px;
-}
-
-.shelfGrid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-    gap:10px;
+    border:none;
 }
 
 .shelf{
     background:#f5f5f7;
-    border-radius:12px;
     padding:10px;
-    box-shadow:0 8px 20px rgba(0,0,0,0.08);
-}
-
-.shelfHeader{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:6px;
-}
-
-.shelfHeader button{
-    width:auto;
-    padding:4px 6px;
-    font-size:10px;
-    border-radius:6px;
+    border-radius:12px;
+    margin-top:10px;
 }
 
 .level{
+    background:white;
     margin-top:6px;
-    padding:6px;
-    border-radius:10px;
-    background:#ffffff;
-    min-height:40px;
-    position:relative;
-}
-
-.level.dropzone{
-    border:1px dashed #ccc;
-}
-
-.levelDelete{
-    position:absolute;
-    top:4px;
-    right:4px;
-    background:var(--danger);
-    color:white;
-    border:none;
-    border-radius:6px;
-    font-size:10px;
-    padding:2px 5px;
-    width:auto;
-}
-
-.item{
-    padding:6px;
-    margin:4px 0;
-    background:#fff;
+    padding:8px;
     border-radius:8px;
-    font-size:12px;
-    cursor:grab;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-}
-
-.item.selected{
-    outline:2px solid #007aff;
-}
-
-.item img{
-    width:28px;
-    height:28px;
-    object-fit:cover;
-    border-radius:6px;
-}
-
-.small{
-    font-size:11px;
-    opacity:0.7;
-}
-
-.itemActions{
-    display:flex;
-    gap:5px;
-}
-
-.itemActions button{
-    width:auto;
-    padding:3px 6px;
-    font-size:10px;
-    border-radius:6px;
+    border:1px dashed #ccc;
 }
 
 </style>
@@ -179,168 +68,78 @@ button{
 
 <div class="container">
 
-<div class="cards">
-    <div class="card"><h2 id="tot">0</h2><div>Oggetti</div></div>
-    <div class="card"><h2 id="cat">0</h2><div>Categorie</div></div>
-</div>
-
 <div class="section">
-<h3>📦 Oggetti</h3>
+<h3>Crea scaffale</h3>
 
-<input id="nome" placeholder="Nome">
-<input id="categoria" placeholder="Categoria">
-<input id="quantita" type="number" placeholder="Quantità">
-<input type="file" id="itemImg" accept="image/*">
-
-<select id="selectShelf"></select>
-<select id="selectLevel"></select>
-
-<button onclick="salva()">Salva oggetto</button>
-</div>
-
-<div class="section">
-<h3>🗄️ Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<input type="file" id="shelfImg" accept="image/*">
-<input id="levels" type="number" placeholder="Ripiani">
-<button onclick="aggiungiScaffale()">Crea scaffale</button>
-
-<div id="shelfView" class="shelfGrid"></div>
+<input id="levels" type="number" placeholder="Numero ripiani" value="1">
+<button onclick="aggiungiScaffale()">Crea</button>
 </div>
 
-<div class="section">
-<h3>📋 Oggetti</h3>
-<div id="items"></div>
-</div>
-
-<canvas id="chart"></canvas>
+<div id="shelfView"></div>
 
 </div>
 
 <script>
 
-let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
-let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
-let selectedItemId = null;
-let editingItemId = null;
-let itemImgData = null;
-let shelfImgData = null;
+let scaffali = JSON.parse(localStorage.getItem("scaffali")) || [];
 
+// SALVA
 function save(){
-    localStorage.setItem("garage_drag", JSON.stringify(inventario));
-    localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
+    localStorage.setItem("scaffali", JSON.stringify(scaffali));
 }
 
-// IMMAGINI
-itemImg.onchange=e=>{
-    const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader();
-    r.onload=ev=>itemImgData=ev.target.result;
-    r.readAsDataURL(f);
-};
+// CREA SCAFFALE (FIX DEFINITIVO)
+function aggiungiScaffale(){
 
-shelfImg.onchange=e=>{
-    const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader();
-    r.onload=ev=>shelfImgData=ev.target.result;
-    r.readAsDataURL(f);
-};
+    const nameInput = document.getElementById("shelfName");
+    const levelInput = document.getElementById("levels");
 
-// DELETE ITEM
-function deleteItem(id){
-    inventario = inventario.filter(i=>i.id!=id);
-    save();
-    renderItems();
-}
+    const nome = nameInput.value.trim();
+    const livelli = parseInt(levelInput.value || "1");
 
-// EDIT ITEM
-function editItem(id){
-    const i=inventario.find(x=>x.id==id);
-    if(!i) return;
-
-    nome.value=i.nome;
-    categoria.value=i.categoria;
-    quantita.value=i.quantita;
-
-    selectShelf.value=i.shelf||0;
-    updateLevels();
-    selectLevel.value=i.level||0;
-
-    editingItemId=id;
-}
-
-// SAVE ITEM
-function salva(){
-
-    if(editingItemId){
-        const i=inventario.find(x=>x.id==editingItemId);
-        if(i){
-            i.nome=nome.value;
-            i.categoria=categoria.value;
-            i.quantita=quantita.value;
-            i.shelf=selectShelf.value;
-            i.level=selectLevel.value;
-        }
-        editingItemId=null;
-    } else {
-        inventario.push({
-            id:Date.now(),
-            nome:nome.value,
-            categoria:categoria.value,
-            quantita:quantita.value,
-            img:itemImgData,
-            shelf:selectShelf.value,
-            level:selectLevel.value
-        });
+    if(!nome){
+        alert("Inserisci nome scaffale");
+        return;
     }
 
+    scaffali.push({
+        nome,
+        livelli
+    });
+
     save();
-    renderItems();
-    updateStats();
+    render();
+    nameInput.value = "";
+    levelInput.value = "";
 }
 
-// RENDER ITEMS
-function renderItems(){
+// RENDER
+function render(){
 
-    items.innerHTML="";
+    const container = document.getElementById("shelfView");
+    container.innerHTML = "";
 
-    inventario.forEach(i=>{
+    scaffali.forEach((s,i)=>{
 
-        const div=document.createElement("div");
-        div.className="item"+(selectedItemId===i.id?" selected":"");
-        div.draggable=true;
+        const div = document.createElement("div");
+        div.className = "shelf";
 
-        div.onclick=()=>{
-            selectedItemId=i.id;
-        };
+        div.innerHTML = `<b>${s.nome}</b>`;
 
-        div.ondragstart=e=>e.dataTransfer.setData("id",i.id);
+        for(let j=0;j<s.livelli;j++){
+            const lvl = document.createElement("div");
+            lvl.className = "level";
+            lvl.innerText = "Ripiano " + (j+1);
+            div.appendChild(lvl);
+        }
 
-        div.innerHTML=`
-            ${i.img?`<img src="${i.img}">`:""}
-            <div>${i.nome}</div>
-            <div class="small">📦 S:${i.shelf??"-"} / R:${i.level??"-"}</div>
-            <div class="itemActions">
-                <button onclick="editItem(${i.id})">✏️</button>
-                <button onclick="deleteItem(${i.id})">🗑</button>
-            </div>
-        `;
-
-        items.appendChild(div);
+        container.appendChild(div);
     });
 }
 
-function updateStats(){
-    tot.innerText=inventario.length;
-    cat.innerText=[...new Set(inventario.map(i=>i.categoria))].length;
-}
-
-function init(){
-    renderItems();
-    updateStats();
-}
-
-init();
+// INIT
+render();
 
 </script>
 
