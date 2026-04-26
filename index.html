@@ -6,44 +6,30 @@
 
 <title>Garage Pro</title>
 
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
 <style>
-
-*{ box-sizing:border-box; }
 
 body{
     margin:0;
-    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:-apple-system, sans-serif;
     background:#f2f2f7;
-    color:#111;
 }
 
 header{
     padding:16px;
     text-align:center;
-    background:rgba(255,255,255,0.9);
-    backdrop-filter: blur(10px);
+    background:white;
     font-weight:700;
     position:sticky;
     top:0;
-    z-index:10;
-    border-bottom:1px solid #e5e5ea;
 }
 
-.container{
-    padding:14px;
-    max-width:900px;
-    margin:auto;
-}
+.container{padding:14px; max-width:900px; margin:auto;}
 
 .section{
     background:white;
     padding:14px;
     margin-top:14px;
     border-radius:18px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.04);
 }
 
 input,select,button{
@@ -51,18 +37,14 @@ input,select,button{
     padding:12px;
     margin-top:8px;
     border-radius:12px;
-    border:1px solid #e5e5ea;
-    font-size:15px;
+    border:1px solid #ddd;
 }
 
 button{
     background:#007aff;
     color:white;
     border:none;
-    font-weight:600;
 }
-
-button:active{ transform:scale(0.98); }
 
 .danger{ background:#ff3b30; }
 
@@ -74,75 +56,28 @@ button:active{ transform:scale(0.98); }
     overflow-x:auto;
 }
 
-.shelfGrid::-webkit-scrollbar{ display:none; }
-
 .shelf{
-    min-width:260px;
+    min-width:280px;
     background:#f9f9fb;
     border-radius:18px;
     padding:12px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.05);
 }
 
 .shelfHeader{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-bottom:8px;
 }
 
 .level{
     background:white;
-    border-radius:14px;
-    padding:10px;
     margin-top:10px;
+    padding:10px;
+    border-radius:12px;
     border:1px solid #eee;
 }
 
 .small{ font-size:11px; opacity:0.6; }
-
-/* ITEMS */
-
-.item{
-    background:white;
-    padding:10px;
-    margin-top:8px;
-    border-radius:14px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    box-shadow:0 3px 10px rgba(0,0,0,0.04);
-}
-
-.itemActions{
-    display:flex;
-    gap:6px;
-}
-
-.itemActions button{
-    width:auto;
-    padding:5px 8px;
-    font-size:12px;
-    border-radius:10px;
-}
-
-/* UNDO UI */
-
-#undoBar{
-    position:fixed;
-    bottom:20px;
-    left:50%;
-    transform:translateX(-50%);
-    background:#1c1c1e;
-    color:white;
-    padding:12px 14px;
-    border-radius:14px;
-    display:flex;
-    gap:10px;
-    align-items:center;
-    z-index:999;
-    font-size:14px;
-}
 
 </style>
 </head>
@@ -153,6 +88,7 @@ button:active{ transform:scale(0.98); }
 
 <div class="container">
 
+<!-- OGGETTI -->
 <div class="section">
 <h3>📦 Oggetti</h3>
 
@@ -165,20 +101,19 @@ button:active{ transform:scale(0.98); }
 <button onclick="salva()">Salva oggetto</button>
 </div>
 
+<!-- SCAFFALI -->
 <div class="section">
 <h3>🗄️ Scaffali</h3>
 
 <input id="shelfName" placeholder="Nome scaffale">
-<input id="levels" type="number" value="1">
-
 <button onclick="aggiungiScaffale()">Crea scaffale</button>
 
 <div id="shelfView" class="shelfGrid"></div>
 </div>
 
+<!-- LISTA -->
 <div class="section">
-<h3>📋 Lista oggetti</h3>
-
+<h3>📋 Oggetti</h3>
 <div id="items"></div>
 </div>
 
@@ -188,215 +123,129 @@ button:active{ transform:scale(0.98); }
 
 /* ================= STATE ================= */
 
-let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
-let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
+let inventario = [];
+let scaffali = [];
 
 let undoStack = [];
 let redoStack = [];
 
 const $ = id => document.getElementById(id);
 
+/* ================= SAVE ================= */
+
 function save(){
-    localStorage.setItem("garage_drag", JSON.stringify(inventario));
-    localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
+    localStorage.setItem("g1", JSON.stringify(inventario));
+    localStorage.setItem("g2", JSON.stringify(scaffali));
 }
 
 /* ================= SNAPSHOT ================= */
 
 function saveState(){
-
     undoStack.push({
         inventario: structuredClone(inventario),
         scaffali: structuredClone(scaffali)
     });
-
     redoStack = [];
-
-    showUndo();
 }
 
-/* ================= UNDO ================= */
+/* ================= UNDO / REDO ================= */
 
 function undo(){
+    if(!undoStack.length) return;
 
-    if(undoStack.length === 0) return;
+    redoStack.push(structuredClone({inventario,scaffali}));
 
-    redoStack.push({
-        inventario: structuredClone(inventario),
-        scaffali: structuredClone(scaffali)
-    });
-
-    const state = undoStack.pop();
-
-    inventario = state.inventario;
-    scaffali = state.scaffali;
+    const s = undoStack.pop();
+    inventario = s.inventario;
+    scaffali = s.scaffali;
 
     save();
-    renderItems();
-    renderShelves();
-    updateSelectors();
-
-    updateUndoUI();
+    render();
 }
-
-/* ================= REDO ================= */
 
 function redo(){
+    if(!redoStack.length) return;
 
-    if(redoStack.length === 0) return;
+    undoStack.push(structuredClone({inventario,scaffali}));
 
-    undoStack.push({
-        inventario: structuredClone(inventario),
-        scaffali: structuredClone(scaffali)
-    });
-
-    const state = redoStack.pop();
-
-    inventario = state.inventario;
-    scaffali = state.scaffali;
+    const s = redoStack.pop();
+    inventario = s.inventario;
+    scaffali = s.scaffali;
 
     save();
-    renderItems();
-    renderShelves();
-    updateSelectors();
-
-    updateUndoUI();
-}
-
-/* ================= UNDO UI ================= */
-
-function showUndo(){
-
-    let bar = document.getElementById("undoBar");
-
-    if(!bar){
-        bar = document.createElement("div");
-        bar.id = "undoBar";
-        document.body.appendChild(bar);
-    }
-
-    updateUndoUI();
-}
-
-function updateUndoUI(){
-
-    const bar = document.getElementById("undoBar");
-    if(!bar) return;
-
-    if(undoStack.length === 0 && redoStack.length === 0){
-        bar.remove();
-        return;
-    }
-
-    bar.innerHTML = `
-        ⬅️ ${undoStack.length}
-        
-        <button onclick="undo()" style="
-            background:#007aff;
-            border:none;
-            color:white;
-            padding:6px 10px;
-            border-radius:10px;">
-            Undo
-        </button>
-
-        <button onclick="redo()" style="
-            background:#34c759;
-            border:none;
-            color:white;
-            padding:6px 10px;
-            border-radius:10px;">
-            Redo
-        </button>
-
-        ➡️ ${redoStack.length}
-    `;
-}
-
-/* ================= ITEMS ================= */
-
-function renderItems(){
-
-    const c = $("items");
-    c.innerHTML = "";
-
-    inventario.forEach(i=>{
-
-        const div = document.createElement("div");
-        div.className = "item";
-
-        div.innerHTML = `
-            <div>
-                <b>${i.nome}</b><br>
-                <span class="small">${i.categoria||""}</span>
-            </div>
-            <div class="itemActions">
-                <button onclick="editItem(${i.id})">✏️</button>
-                <button class="danger" onclick="deleteItem(${i.id})">🗑</button>
-            </div>
-        `;
-
-        c.appendChild(div);
-    });
-}
-
-/* ================= ACTIONS ================= */
-
-function deleteItem(id){
-    saveState();
-    inventario = inventario.filter(i=>i.id!=id);
-    save();
-    renderItems();
-    renderShelves();
-}
-
-function salva(){
-
-    const nome = $("nome").value.trim();
-    if(!nome) return;
-
-    inventario.push({
-        id:Date.now(),
-        nome,
-        categoria:$("categoria").value,
-        shelf:$("selectShelf").value,
-        level:$("selectLevel").value
-    });
-
-    save();
-    renderItems();
+    render();
 }
 
 /* ================= SCAFFALI ================= */
 
 function aggiungiScaffale(){
+    saveState();
 
     scaffali.push({
         nome:$("shelfName").value,
-        livelli:parseInt($("levels").value||1)
+        livelli:1
     });
 
-    save();
-    renderShelves();
-    updateSelectors();
+    render();
 }
 
-function deleteShelf(si){
+/* ✏️ EDIT SCAFFALE */
+function editShelf(si){
+
+    const azione = prompt("Azioni: +1 / -1 / rename");
+
+    if(!azione) return;
+
     saveState();
-    scaffali.splice(si,1);
-    save();
-    renderShelves();
-    renderItems();
+
+    if(azione === "+1"){
+        scaffali[si].livelli++;
+
+    } else if(azione === "-1" && scaffali[si].livelli>1){
+
+        scaffali[si].livelli--;
+
+        inventario.forEach(i=>{
+            if(i.shelf==si && i.level>=scaffali[si].livelli){
+                i.level=null;
+            }
+        });
+
+    } else if(azione === "rename"){
+        const n = prompt("Nuovo nome");
+        if(n) scaffali[si].nome = n;
+    }
+
+    render();
 }
 
-function deleteLevel(si,li){
+/* ================= ITEMS ================= */
+
+function salva(){
+
     saveState();
-    scaffali[si].livelli--;
-    save();
-    renderShelves();
+
+    inventario.push({
+        id:Date.now(),
+        nome:$("nome").value,
+        categoria:$("categoria").value,
+        shelf:$("selectShelf").value,
+        level:$("selectLevel").value
+    });
+
+    render();
 }
 
 /* ================= RENDER ================= */
+
+function render(){
+
+    renderShelves();
+    renderItems();
+    updateSelectors();
+}
+
+/* ================= SHELVES ================= */
 
 function renderShelves(){
 
@@ -411,7 +260,7 @@ function renderShelves(){
         div.innerHTML=`
             <div class="shelfHeader">
                 <b>${s.nome}</b>
-                <button class="danger" onclick="deleteShelf(${si})">🗑</button>
+                <button onclick="editShelf(${si})">✏️</button>
             </div>
         `;
 
@@ -420,16 +269,13 @@ function renderShelves(){
             const lv=document.createElement("div");
             lv.className="level";
 
-            const items=inventario.filter(i=>i.shelf==si && i.level==li);
+            const items = inventario.filter(i=>i.shelf==si && i.level==li);
 
             lv.innerHTML=`
                 <div style="display:flex;justify-content:space-between;">
                     <div class="small">Ripiano ${li+1}</div>
-                    <button onclick="deleteLevel(${si},${li})"
-                        style="border:none;background:#f2f2f7;border-radius:8px;">
-                        🗑
-                    </button>
                 </div>
+
                 <div>
                     ${items.map(o=>"• "+o.nome).join("<br>")||"<span class='small'>(vuoto)</span>"}
                 </div>
@@ -442,7 +288,25 @@ function renderShelves(){
     });
 }
 
-/* ================= SELECTORS ================= */
+/* ================= ITEMS ================= */
+
+function renderItems(){
+
+    const c=$("items");
+    c.innerHTML="";
+
+    inventario.forEach(i=>{
+
+        const div=document.createElement("div");
+        div.innerHTML=`
+            <b>${i.nome}</b>
+        `;
+
+        c.appendChild(div);
+    });
+}
+
+/* ================= SELECT ================= */
 
 function updateSelectors(){
 
@@ -456,9 +320,7 @@ function updateSelectors(){
 
 /* ================= INIT ================= */
 
-renderItems();
-renderShelves();
-updateSelectors();
+render();
 
 </script>
 
