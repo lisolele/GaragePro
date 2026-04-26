@@ -9,7 +9,6 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Garage Pro">
 
 <style>
 
@@ -27,7 +26,7 @@ body{
 header{
     padding:16px;
     text-align:center;
-    background:rgba(255,255,255,0.85);
+    background:rgba(255,255,255,0.9);
     backdrop-filter: blur(10px);
     font-weight:700;
     position:sticky;
@@ -74,7 +73,7 @@ button:active{
     background:#ff3b30;
 }
 
-/* --- SCROLL CARDS --- */
+/* --- CARDS SCROLL SCAFFALI --- */
 
 .shelfGrid{
     display:flex;
@@ -102,6 +101,7 @@ button:active{
     display:flex;
     justify-content:space-between;
     align-items:center;
+    margin-bottom:6px;
 }
 
 .level{
@@ -217,19 +217,23 @@ mark{
 
 <script>
 
+/* ================= STATE ================= */
+
 let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
 let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
 
-const $ = id => document.getElementById(id);
+let editingItemId = null;
 
-/* ---------------- SAVE ---------------- */
+/* ================= HELPERS ================= */
+
+const $ = id => document.getElementById(id);
 
 function save(){
     localStorage.setItem("garage_drag", JSON.stringify(inventario));
     localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
 }
 
-/* ---------------- HIGHLIGHT ---------------- */
+/* ================= HIGHLIGHT ================= */
 
 function highlight(text, query){
     if(!query) return text;
@@ -240,7 +244,7 @@ function highlight(text, query){
     return text.replace(regex, `<mark>$1</mark>`);
 }
 
-/* ---------------- FILTER RENDER ITEMS ---------------- */
+/* ================= ITEMS ================= */
 
 function renderItems(){
 
@@ -255,11 +259,11 @@ function renderItems(){
     inventario
     .filter(i=>{
 
-        const matchName = !nameQ || i.nome?.toLowerCase().includes(nameQ);
-        const matchCat = !catQ || i.categoria?.toLowerCase().includes(catQ);
-        const matchShelf = !shelfQ || String(i.shelf) === String(shelfQ);
+        const okName = !nameQ || i.nome?.toLowerCase().includes(nameQ);
+        const okCat = !catQ || i.categoria?.toLowerCase().includes(catQ);
+        const okShelf = !shelfQ || String(i.shelf) === String(shelfQ);
 
-        return matchName && matchCat && matchShelf;
+        return okName && okCat && okShelf;
     })
     .forEach(i=>{
 
@@ -284,7 +288,72 @@ function renderItems(){
     });
 }
 
-/* ---------------- SHELVES ---------------- */
+/* ================= EDIT / DELETE FIX ================= */
+
+function editItem(id){
+
+    const i = inventario.find(x=>x.id==id);
+    if(!i) return;
+
+    $("nome").value = i.nome || "";
+    $("categoria").value = i.categoria || "";
+    $("quantita").value = i.quantita || "";
+
+    $("selectShelf").value = i.shelf || "";
+    updateLevels();
+    $("selectLevel").value = i.level || "";
+
+    editingItemId = id;
+}
+
+function deleteItem(id){
+
+    inventario = inventario.filter(i=>i.id != id);
+
+    save();
+    renderItems();
+    renderShelves();
+}
+
+/* ================= SAVE ITEM ================= */
+
+function salva(){
+
+    const nome = $("nome").value.trim();
+    if(!nome) return alert("Nome obbligatorio");
+
+    if(editingItemId){
+
+        const i = inventario.find(x=>x.id==editingItemId);
+        if(i){
+            i.nome = nome;
+            i.categoria = $("categoria").value;
+            i.quantita = $("quantita").value;
+            i.shelf = $("selectShelf").value;
+            i.level = $("selectLevel").value;
+        }
+
+        editingItemId = null;
+
+    } else {
+
+        inventario.push({
+            id:Date.now(),
+            nome,
+            categoria:$("categoria").value,
+            quantita:$("quantita").value,
+            img:null,
+            shelf:$("selectShelf").value,
+            level:$("selectLevel").value
+        });
+    }
+
+    save();
+    renderItems();
+    renderShelves();
+}
+
+/* ================= SHELVES ================= */
 
 function renderShelves(){
 
@@ -296,25 +365,21 @@ function renderShelves(){
         const div = document.createElement("div");
         div.className = "shelf";
 
-        div.innerHTML = `
-            <div class="shelfHeader">
-                <b>${s.nome}</b>
-            </div>
-        `;
+        div.innerHTML = `<div class="shelfHeader"><b>${s.nome}</b></div>`;
 
         for(let li=0; li<s.livelli; li++){
 
             const lv = document.createElement("div");
             lv.className = "level";
 
-            const oggetti = inventario.filter(i =>
+            const items = inventario.filter(i =>
                 String(i.shelf) === String(si) &&
                 String(i.level) === String(li)
             );
 
             lv.innerHTML = `
                 <div class="small">Ripiano ${li+1}</div>
-                <div>${oggetti.map(o=>"• "+o.nome).join("<br>") || "<span class='small'>(vuoto)</span>"}</div>
+                <div>${items.map(o=>"• "+o.nome).join("<br>") || "<span class='small'>(vuoto)</span>"}</div>
             `;
 
             div.appendChild(lv);
@@ -324,7 +389,23 @@ function renderShelves(){
     });
 }
 
-/* ---------------- FILTER SELECT ---------------- */
+/* ================= SHELF LOGIC ================= */
+
+function aggiungiScaffale(){
+
+    const nome = $("shelfName").value.trim();
+    const livelli = parseInt($("levels").value || 1);
+
+    if(!nome) return alert("Inserisci nome scaffale");
+
+    scaffali.push({ nome, livelli });
+
+    save();
+    renderShelves();
+    updateSelectors();
+}
+
+/* ================= SELECTORS ================= */
 
 function updateSelectors(){
 
@@ -367,9 +448,10 @@ function updateLevels(){
     }
 }
 
-/* ---------------- FILTER EVENTS ---------------- */
+/* ================= FILTERS ================= */
 
 function bindFilters(){
+
     ["searchName","searchCategory","searchShelf"].forEach(id=>{
         $(id).addEventListener("input", renderItems);
         $(id).addEventListener("change", renderItems);
@@ -383,7 +465,7 @@ function resetFilters(){
     renderItems();
 }
 
-/* ---------------- INIT ---------------- */
+/* ================= INIT ================= */
 
 bindFilters();
 renderItems();
