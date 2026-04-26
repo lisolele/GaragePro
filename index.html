@@ -10,7 +10,7 @@
 
 body{
     margin:0;
-    font-family:-apple-system, sans-serif;
+    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
     background:#f2f2f7;
 }
 
@@ -23,7 +23,7 @@ header{
     top:0;
 }
 
-.container{padding:14px; max-width:900px; margin:auto;}
+.container{ padding:14px; max-width:900px; margin:auto; }
 
 .section{
     background:white;
@@ -44,6 +44,7 @@ button{
     background:#007aff;
     color:white;
     border:none;
+    font-weight:600;
 }
 
 .danger{ background:#ff3b30; }
@@ -67,6 +68,7 @@ button{
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:10px;
 }
 
 .level{
@@ -78,6 +80,23 @@ button{
 }
 
 .small{ font-size:11px; opacity:0.6; }
+
+/* UNDO BAR */
+
+#undoBar{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#1c1c1e;
+    color:white;
+    padding:10px 12px;
+    border-radius:14px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    font-size:14px;
+}
 
 </style>
 </head>
@@ -123,8 +142,8 @@ button{
 
 /* ================= STATE ================= */
 
-let inventario = [];
-let scaffali = [];
+let inventario = JSON.parse(localStorage.getItem("inv")) || [];
+let scaffali = JSON.parse(localStorage.getItem("shel")) || [];
 
 let undoStack = [];
 let redoStack = [];
@@ -134,8 +153,8 @@ const $ = id => document.getElementById(id);
 /* ================= SAVE ================= */
 
 function save(){
-    localStorage.setItem("g1", JSON.stringify(inventario));
-    localStorage.setItem("g2", JSON.stringify(scaffali));
+    localStorage.setItem("inv", JSON.stringify(inventario));
+    localStorage.setItem("shel", JSON.stringify(scaffali));
 }
 
 /* ================= SNAPSHOT ================= */
@@ -146,6 +165,7 @@ function saveState(){
         scaffali: structuredClone(scaffali)
     });
     redoStack = [];
+    showUndo();
 }
 
 /* ================= UNDO / REDO ================= */
@@ -176,9 +196,37 @@ function redo(){
     render();
 }
 
+/* ================= UNDO UI ================= */
+
+function showUndo(){
+
+    let bar = document.getElementById("undoBar");
+
+    if(!bar){
+        bar = document.createElement("div");
+        bar.id = "undoBar";
+        document.body.appendChild(bar);
+    }
+
+    bar.innerHTML = `
+        ⬅️ Undo (${undoStack.length})
+
+        <button onclick="undo()" style="background:#007aff;border:none;color:white;padding:6px 10px;border-radius:10px;">
+            Undo
+        </button>
+
+        <button onclick="redo()" style="background:#34c759;border:none;color:white;padding:6px 10px;border-radius:10px;">
+            Redo
+        </button>
+
+        ➡️ (${redoStack.length})
+    `;
+}
+
 /* ================= SCAFFALI ================= */
 
 function aggiungiScaffale(){
+
     saveState();
 
     scaffali.push({
@@ -189,37 +237,26 @@ function aggiungiScaffale(){
     render();
 }
 
-/* ✏️ EDIT SCAFFALE */
-function editShelf(si){
-
-    const azione = prompt("Azioni: +1 / -1 / rename");
-
-    if(!azione) return;
+/* ➕➖ RIPIANI INLINE */
+function changeLevels(i,delta){
 
     saveState();
 
-    if(azione === "+1"){
-        scaffali[si].livelli++;
+    scaffali[i].livelli += delta;
 
-    } else if(azione === "-1" && scaffali[si].livelli>1){
+    if(scaffali[i].livelli < 1)
+        scaffali[i].livelli = 1;
 
-        scaffali[si].livelli--;
-
-        inventario.forEach(i=>{
-            if(i.shelf==si && i.level>=scaffali[si].livelli){
-                i.level=null;
-            }
-        });
-
-    } else if(azione === "rename"){
-        const n = prompt("Nuovo nome");
-        if(n) scaffali[si].nome = n;
-    }
+    inventario.forEach(o=>{
+        if(o.shelf==i && o.level>=scaffali[i].livelli){
+            o.level = null;
+        }
+    });
 
     render();
 }
 
-/* ================= ITEMS ================= */
+/* ================= OGGETTI ================= */
 
 function salva(){
 
@@ -239,43 +276,57 @@ function salva(){
 /* ================= RENDER ================= */
 
 function render(){
-
     renderShelves();
     renderItems();
     updateSelectors();
 }
 
-/* ================= SHELVES ================= */
+/* ================= SCAFFALI UI INLINE ================= */
 
 function renderShelves(){
 
     const c=$("shelfView");
     c.innerHTML="";
 
-    scaffali.forEach((s,si)=>{
+    scaffali.forEach((s,i)=>{
 
         const div=document.createElement("div");
         div.className="shelf";
 
         div.innerHTML=`
             <div class="shelfHeader">
-                <b>${s.nome}</b>
-                <button onclick="editShelf(${si})">✏️</button>
+
+                <!-- INLINE EDIT NAME -->
+                <input value="${s.nome}"
+                    style="
+                        border:none;
+                        background:transparent;
+                        font-weight:700;
+                        font-size:16px;
+                        width:60%;
+                        outline:none;
+                    "
+                    oninput="scaffali[${i}].nome=this.value; save();"
+                >
+
+                <!-- RIPIANI -->
+                <div style="display:flex;gap:6px;">
+                    <button onclick="changeLevels(${i},1)">+</button>
+                    <button onclick="changeLevels(${i},-1)" class="danger">-</button>
+                </div>
+
             </div>
         `;
 
-        for(let li=0; li<s.livelli; li++){
+        for(let l=0;l<s.livelli;l++){
 
             const lv=document.createElement("div");
             lv.className="level";
 
-            const items = inventario.filter(i=>i.shelf==si && i.level==li);
+            const items = inventario.filter(o=>o.shelf==i && o.level==l);
 
             lv.innerHTML=`
-                <div style="display:flex;justify-content:space-between;">
-                    <div class="small">Ripiano ${li+1}</div>
-                </div>
-
+                <div class="small">Ripiano ${l+1}</div>
                 <div>
                     ${items.map(o=>"• "+o.nome).join("<br>")||"<span class='small'>(vuoto)</span>"}
                 </div>
@@ -298,10 +349,7 @@ function renderItems(){
     inventario.forEach(i=>{
 
         const div=document.createElement("div");
-        div.innerHTML=`
-            <b>${i.nome}</b>
-        `;
-
+        div.innerHTML=`<b>${i.nome}</b>`;
         c.appendChild(div);
     });
 }
@@ -311,12 +359,35 @@ function renderItems(){
 function updateSelectors(){
 
     const s=$("selectShelf");
+    const l=$("selectLevel");
+
     s.innerHTML="";
 
     scaffali.forEach((sh,i)=>{
         s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
     });
+
+    updateLevels();
 }
+
+function updateLevels(){
+
+    const i=$("selectShelf").value;
+    const l=$("selectLevel");
+
+    l.innerHTML="";
+
+    if(!scaffali[i]){
+        l.innerHTML="<option>--</option>";
+        return;
+    }
+
+    for(let j=0;j<scaffali[i].livelli;j++){
+        l.innerHTML+=`<option value="${j}">Ripiano ${j+1}</option>`;
+    }
+}
+
+$("selectShelf").addEventListener("change", updateLevels);
 
 /* ================= INIT ================= */
 
