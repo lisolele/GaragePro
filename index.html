@@ -110,7 +110,9 @@ canvas {
 <header>
     <h2>🚗 Garage Pro</h2>
 </header>
-
+    
+<button onclick="esportaJSON()">📤 Esporta JSON</button>
+<input type="file" id="importFile" accept="application/json" onchange="importaJSON(event)">
 <div class="container">
 
 <div class="cards">
@@ -360,7 +362,46 @@ function pulisci() {
 
 // AVVIO
 mostra();
+function esportaJSON() {
+    const dataStr = JSON.stringify(inventario, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
 
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "garage_backup.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function importaJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            if (!Array.isArray(data)) {
+                alert("File non valido");
+                return;
+            }
+
+            inventario = data;
+            salvaStorage();
+            mostra();
+
+            alert("Import completato!");
+        } catch (err) {
+            alert("Errore nel file JSON");
+        }
+    };
+
+    reader.readAsText(file);
+}
+    
 </script>
 
 </body>
