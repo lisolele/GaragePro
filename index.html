@@ -88,7 +88,6 @@ button{
     border-radius:12px;
     padding:10px;
     box-shadow:0 8px 20px rgba(0,0,0,0.08);
-    position:relative;
 }
 
 .shelfHeader{
@@ -96,6 +95,13 @@ button{
     justify-content:space-between;
     align-items:center;
     margin-bottom:6px;
+}
+
+.shelfHeader button{
+    width:auto;
+    padding:4px 6px;
+    font-size:10px;
+    border-radius:6px;
 }
 
 .level{
@@ -109,6 +115,19 @@ button{
 
 .level.dropzone{
     border:1px dashed #ccc;
+}
+
+.levelDelete{
+    position:absolute;
+    top:4px;
+    right:4px;
+    background:var(--danger);
+    color:white;
+    border:none;
+    border-radius:6px;
+    font-size:10px;
+    padding:2px 5px;
+    width:auto;
 }
 
 .item{
@@ -139,26 +158,16 @@ button{
     opacity:0.7;
 }
 
-.dangerBtn{
-    background:var(--danger);
-    color:white;
-    border:none;
-    padding:4px 8px;
-    border-radius:8px;
-    font-size:11px;
-    width:auto;
+.itemActions{
+    display:flex;
+    gap:5px;
 }
 
-.levelDelete{
-    position:absolute;
-    top:4px;
-    right:4px;
-    background:var(--danger);
-    color:white;
-    border:none;
-    border-radius:6px;
+.itemActions button{
+    width:auto;
+    padding:3px 6px;
     font-size:10px;
-    padding:2px 5px;
+    border-radius:6px;
 }
 
 </style>
@@ -175,14 +184,12 @@ button{
     <div class="card"><h2 id="cat">0</h2><div>Categorie</div></div>
 </div>
 
-<!-- OGGETTI -->
 <div class="section">
 <h3>📦 Oggetti</h3>
 
 <input id="nome" placeholder="Nome">
 <input id="categoria" placeholder="Categoria">
 <input id="quantita" type="number" placeholder="Quantità">
-
 <input type="file" id="itemImg" accept="image/*">
 
 <select id="selectShelf"></select>
@@ -191,7 +198,6 @@ button{
 <button onclick="salva()">Salva oggetto</button>
 </div>
 
-<!-- SCAFFALI -->
 <div class="section">
 <h3>🗄️ Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
@@ -202,9 +208,8 @@ button{
 <div id="shelfView" class="shelfGrid"></div>
 </div>
 
-<!-- INVENTARIO -->
 <div class="section">
-<h3>📋 Oggetti (drag & sync dropdown)</h3>
+<h3>📋 Oggetti</h3>
 <div id="items"></div>
 </div>
 
@@ -216,10 +221,10 @@ button{
 
 let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
 let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
-let chart;
-let shelfImgData = null;
-let itemImgData = null;
 let selectedItemId = null;
+let editingItemId = null;
+let itemImgData = null;
+let shelfImgData = null;
 
 function save(){
     localStorage.setItem("garage_drag", JSON.stringify(inventario));
@@ -227,174 +232,74 @@ function save(){
 }
 
 // IMMAGINI
-itemImg.onchange = e=>{
+itemImg.onchange=e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
     r.onload=ev=>itemImgData=ev.target.result;
     r.readAsDataURL(f);
 };
 
-shelfImg.onchange = e=>{
+shelfImg.onchange=e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
     r.onload=ev=>shelfImgData=ev.target.result;
     r.readAsDataURL(f);
 };
 
-// DELETE SCAFFALE
-function deleteShelf(si){
-    scaffali.splice(si,1);
-
-    inventario.forEach(i=>{
-        if(i.shelf==si){
-            i.shelf=null;
-            i.level=null;
-        }
-    });
-
+// DELETE ITEM
+function deleteItem(id){
+    inventario = inventario.filter(i=>i.id!=id);
     save();
-    renderShelves();
-    updateSelectors();
     renderItems();
 }
 
-// DELETE LEVEL
-function deleteLevel(si,li){
-    scaffali[si].livelli--;
-
-    inventario.forEach(i=>{
-        if(i.shelf==si && i.level==li){
-            i.level=null;
-        }
-        if(i.shelf==si && i.level>li){
-            i.level--;
-        }
-    });
-
-    save();
-    renderShelves();
-    renderItems();
-    updateSelectors();
-}
-
-// SCAFFALI
-function aggiungiScaffale(){
-    scaffali.push({
-        nome:shelfName.value,
-        livelli:parseInt(levels.value||1),
-        img:shelfImgData
-    });
-
-    save();
-    renderShelves();
-    updateSelectors();
-}
-
-function renderShelves(){
-    shelfView.innerHTML="";
-
-    scaffali.forEach((s,si)=>{
-
-        const div=document.createElement("div");
-        div.className="shelf";
-
-        div.innerHTML=`
-            <div class="shelfHeader">
-                <b>${s.nome}</b>
-                <button class="dangerBtn" onclick="deleteShelf(${si})">🗑</button>
-            </div>
-            ${s.img?`<img src="${s.img}">`:""}
-        `;
-
-        for(let i=0;i<s.livelli;i++){
-            const lv=document.createElement("div");
-            lv.className="level dropzone";
-            lv.textContent="Ripiano "+(i+1);
-
-            const del=document.createElement("button");
-            del.textContent="✖";
-            del.className="levelDelete";
-            del.onclick=()=>deleteLevel(si,i);
-
-            lv.appendChild(del);
-
-            lv.ondragover=e=>e.preventDefault();
-            lv.ondrop=e=>dropItem(e,si,i);
-
-            div.appendChild(lv);
-        }
-
-        shelfView.appendChild(div);
-    });
-}
-
-// SELECT SYNC
-function updateSelectors(){
-
-    selectShelf.innerHTML="";
-    scaffali.forEach((s,i)=>{
-        const o=document.createElement("option");
-        o.value=i;
-        o.text=s.nome;
-        selectShelf.appendChild(o);
-    });
-
-    updateLevels();
-}
-
-function updateLevels(){
-
-    selectLevel.innerHTML="";
-
-    const s=scaffali[selectShelf.value];
-    if(!s) return;
-
-    for(let i=0;i<s.livelli;i++){
-        const o=document.createElement("option");
-        o.value=i;
-        o.text="Ripiano "+(i+1);
-        selectLevel.appendChild(o);
-    }
-}
-
-selectShelf.onchange=()=>{
-    updateLevels();
-    syncFromDropdown();
-};
-
-selectLevel.onchange=syncFromDropdown;
-
-function syncFromDropdown(){
-    if(selectedItemId===null) return;
-
-    const i=inventario.find(x=>x.id==selectedItemId);
+// EDIT ITEM
+function editItem(id){
+    const i=inventario.find(x=>x.id==id);
     if(!i) return;
 
-    i.shelf=selectShelf.value;
-    i.level=selectLevel.value;
+    nome.value=i.nome;
+    categoria.value=i.categoria;
+    quantita.value=i.quantita;
 
-    save();
-    renderItems();
+    selectShelf.value=i.shelf||0;
+    updateLevels();
+    selectLevel.value=i.level||0;
+
+    editingItemId=id;
 }
 
-// OGGETTI
+// SAVE ITEM
 function salva(){
 
-    inventario.push({
-        id:Date.now(),
-        nome:nome.value,
-        categoria:categoria.value,
-        quantita:quantita.value,
-        img:itemImgData,
-        shelf:selectShelf.value,
-        level:selectLevel.value
-    });
+    if(editingItemId){
+        const i=inventario.find(x=>x.id==editingItemId);
+        if(i){
+            i.nome=nome.value;
+            i.categoria=categoria.value;
+            i.quantita=quantita.value;
+            i.shelf=selectShelf.value;
+            i.level=selectLevel.value;
+        }
+        editingItemId=null;
+    } else {
+        inventario.push({
+            id:Date.now(),
+            nome:nome.value,
+            categoria:categoria.value,
+            quantita:quantita.value,
+            img:itemImgData,
+            shelf:selectShelf.value,
+            level:selectLevel.value
+        });
+    }
 
     save();
     renderItems();
     updateStats();
 }
 
+// RENDER ITEMS
 function renderItems(){
 
     items.innerHTML="";
@@ -407,10 +312,6 @@ function renderItems(){
 
         div.onclick=()=>{
             selectedItemId=i.id;
-            selectShelf.value=i.shelf||0;
-            updateLevels();
-            selectLevel.value=i.level||0;
-            renderItems();
         };
 
         div.ondragstart=e=>e.dataTransfer.setData("id",i.id);
@@ -419,25 +320,14 @@ function renderItems(){
             ${i.img?`<img src="${i.img}">`:""}
             <div>${i.nome}</div>
             <div class="small">📦 S:${i.shelf??"-"} / R:${i.level??"-"}</div>
+            <div class="itemActions">
+                <button onclick="editItem(${i.id})">✏️</button>
+                <button onclick="deleteItem(${i.id})">🗑</button>
+            </div>
         `;
 
         items.appendChild(div);
     });
-}
-
-function dropItem(e,si,li){
-
-    const id=e.dataTransfer.getData("id");
-
-    inventario.forEach(i=>{
-        if(i.id==id){
-            i.shelf=si;
-            i.level=li;
-        }
-    });
-
-    save();
-    renderItems();
 }
 
 function updateStats(){
@@ -446,9 +336,7 @@ function updateStats(){
 }
 
 function init(){
-    renderShelves();
     renderItems();
-    updateSelectors();
     updateStats();
 }
 
