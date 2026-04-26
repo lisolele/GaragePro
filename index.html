@@ -19,65 +19,83 @@
 
 body{
     margin:0;
-    font-family:-apple-system, sans-serif;
+    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
     background:#f2f2f7;
+    color:#111;
 }
 
 header{
     padding:16px;
     text-align:center;
-    background:white;
-    font-weight:600;
+    background:rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    font-weight:700;
     position:sticky;
     top:0;
+    z-index:10;
+    border-bottom:1px solid #e5e5ea;
 }
 
 .container{
-    padding:12px;
-    max-width:1000px;
+    padding:14px;
+    max-width:900px;
     margin:auto;
 }
 
 .section{
     background:white;
-    padding:12px;
-    margin-top:12px;
-    border-radius:12px;
+    padding:14px;
+    margin-top:14px;
+    border-radius:18px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.04);
 }
 
 input,select,button{
     width:100%;
-    padding:10px;
-    margin-top:6px;
-    border-radius:10px;
-    border:1px solid #ddd;
+    padding:12px;
+    margin-top:8px;
+    border-radius:12px;
+    border:1px solid #e5e5ea;
+    font-size:15px;
 }
 
 button{
     background:#007aff;
     color:white;
     border:none;
+    font-weight:600;
+}
+
+button:active{
+    transform:scale(0.98);
 }
 
 .danger{
     background:#ff3b30;
 }
 
-/* --- SCAFFALI --- */
+/* --- SCROLL CARDS --- */
 
 .shelfGrid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
-    gap:10px;
-    width:100%;
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding-bottom:6px;
+    scroll-snap-type:x mandatory;
+}
+
+.shelfGrid::-webkit-scrollbar{
+    display:none;
 }
 
 .shelf{
-    background:#f5f5f7;
-    padding:10px;
-    border-radius:12px;
-    max-width:100%;
-    overflow:hidden;
+    min-width:260px;
+    max-width:260px;
+    background:#f9f9fb;
+    border-radius:18px;
+    padding:12px;
+    scroll-snap-align:start;
+    box-shadow:0 6px 18px rgba(0,0,0,0.05);
 }
 
 .shelfHeader{
@@ -86,89 +104,63 @@ button{
     align-items:center;
 }
 
-.shelfActions button{
-    width:auto;
-    padding:3px 6px;
-    font-size:10px;
-    border-radius:6px;
-}
-
 .level{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:6px;
-    margin-top:6px;
-    padding:6px;
-    border-radius:8px;
-    border:1px dashed #ccc;
     background:white;
+    border-radius:14px;
+    padding:10px;
+    margin-top:10px;
+    border:1px solid #eee;
 }
 
-.levelContent{
-    flex:1;
-    min-width:0;
+.small{
+    font-size:11px;
+    opacity:0.6;
 }
 
-.levelContent > div{
-    display:flex;
-    flex-wrap:wrap;
-    gap:4px;
-}
-
-.levelContent span,
-.levelContent div{
-    word-break:break-word;
-}
-
-.levelActions button{
-    width:auto;
-    padding:2px 5px;
-    font-size:10px;
-    border-radius:6px;
-}
-
-/* --- OGGETTI --- */
+/* --- ITEMS --- */
 
 .item{
     background:white;
-    padding:6px;
-    margin-top:6px;
-    border-radius:8px;
+    padding:10px;
+    margin-top:8px;
+    border-radius:14px;
     display:flex;
     justify-content:space-between;
     align-items:center;
-    font-size:12px;
-}
-
-.item img{
-    width:26px;
-    height:26px;
-    border-radius:5px;
-    object-fit:cover;
+    box-shadow:0 3px 10px rgba(0,0,0,0.04);
 }
 
 .itemInfo{
     display:flex;
     align-items:center;
-    gap:6px;
+    gap:10px;
+}
+
+.item img{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    object-fit:cover;
 }
 
 .itemActions{
     display:flex;
-    gap:5px;
+    gap:6px;
 }
 
 .itemActions button{
     width:auto;
-    padding:3px 6px;
-    font-size:10px;
-    border-radius:6px;
+    padding:5px 8px;
+    font-size:12px;
+    border-radius:10px;
 }
 
-.small{
-    font-size:10px;
-    opacity:0.6;
+/* --- HIGHLIGHT --- */
+
+mark{
+    background:rgba(255,214,10,0.35);
+    border-radius:4px;
+    padding:0 2px;
 }
 
 </style>
@@ -200,7 +192,7 @@ button{
 <h3>🗄️ Scaffali</h3>
 
 <input id="shelfName" placeholder="Nome scaffale">
-<input id="levels" type="number" placeholder="Ripiani" value="1">
+<input id="levels" type="number" value="1">
 
 <button onclick="aggiungiScaffale()">Crea scaffale</button>
 
@@ -210,6 +202,14 @@ button{
 <!-- LISTA OGGETTI -->
 <div class="section">
 <h3>📋 Lista oggetti</h3>
+
+<input id="searchName" placeholder="🔎 Nome oggetto">
+<input id="searchCategory" placeholder="🏷 Categoria">
+
+<select id="searchShelf"></select>
+
+<button onclick="resetFilters()" style="background:#8e8e93;">Reset filtri</button>
+
 <div id="items"></div>
 </div>
 
@@ -220,80 +220,71 @@ button{
 let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
 let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
 
-let editingItemId = null;
-let itemImgData = null;
-
 const $ = id => document.getElementById(id);
+
+/* ---------------- SAVE ---------------- */
 
 function save(){
     localStorage.setItem("garage_drag", JSON.stringify(inventario));
     localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
 }
 
-$("itemImg").onchange = e=>{
-    const f = e.target.files[0];
-    if(!f) return;
+/* ---------------- HIGHLIGHT ---------------- */
 
-    const r = new FileReader();
-    r.onload = ev => itemImgData = ev.target.result;
-    r.readAsDataURL(f);
-};
+function highlight(text, query){
+    if(!query) return text;
 
-function aggiungiScaffale(){
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, "gi");
 
-    const nome = $("shelfName").value.trim();
-    const livelli = parseInt($("levels").value || "1");
-
-    if(!nome){
-        alert("Inserisci nome scaffale");
-        return;
-    }
-
-    scaffali.push({ nome, livelli });
-
-    save();
-    renderShelves();
-    updateSelectors();
-
-    $("shelfName").value = "";
-    $("levels").value = 1;
+    return text.replace(regex, `<mark>$1</mark>`);
 }
 
-function deleteShelf(si){
+/* ---------------- FILTER RENDER ITEMS ---------------- */
 
-    scaffali.splice(si,1);
+function renderItems(){
 
-    inventario.forEach(i=>{
-        if(i.shelf == si){
-            i.shelf = null;
-            i.level = null;
-        }
+    const c = $("items");
+
+    const nameQ = $("searchName").value.toLowerCase().trim();
+    const catQ = $("searchCategory").value.toLowerCase().trim();
+    const shelfQ = $("searchShelf").value;
+
+    c.innerHTML = "";
+
+    inventario
+    .filter(i=>{
+
+        const matchName = !nameQ || i.nome?.toLowerCase().includes(nameQ);
+        const matchCat = !catQ || i.categoria?.toLowerCase().includes(catQ);
+        const matchShelf = !shelfQ || String(i.shelf) === String(shelfQ);
+
+        return matchName && matchCat && matchShelf;
+    })
+    .forEach(i=>{
+
+        const div = document.createElement("div");
+        div.className = "item";
+
+        div.innerHTML = `
+            <div class="itemInfo">
+                ${i.img ? `<img src="${i.img}">` : ""}
+                <div>
+                    <b>${highlight(i.nome, nameQ)}</b><br>
+                    <span class="small">${highlight(i.categoria || "", catQ)}</span>
+                </div>
+            </div>
+            <div class="itemActions">
+                <button onclick="editItem(${i.id})">✏️</button>
+                <button class="danger" onclick="deleteItem(${i.id})">🗑</button>
+            </div>
+        `;
+
+        c.appendChild(div);
     });
-
-    save();
-    renderShelves();
-    renderItems();
-    updateSelectors();
 }
 
-function deleteLevel(si,li){
-
-    scaffali[si].livelli--;
-
-    inventario.forEach(i=>{
-        if(i.shelf == si && i.level == li){
-            i.level = null;
-        }
-        if(i.shelf == si && i.level > li){
-            i.level--;
-        }
-    });
-
-    save();
-    renderShelves();
-    renderItems();
-    updateSelectors();
-}
+/* ---------------- SHELVES ---------------- */
 
 function renderShelves(){
 
@@ -308,9 +299,6 @@ function renderShelves(){
         div.innerHTML = `
             <div class="shelfHeader">
                 <b>${s.nome}</b>
-                <div class="shelfActions">
-                    <button class="danger" onclick="deleteShelf(${si})">🗑</button>
-                </div>
             </div>
         `;
 
@@ -324,25 +312,10 @@ function renderShelves(){
                 String(i.level) === String(li)
             );
 
-            let itemsHTML = oggetti.map(o => `
-                <div style="display:flex;gap:5px;align-items:center;">
-                    ${o.img ? `<img src="${o.img}" width="18">` : ""}
-                    <span style="font-size:11px;">${o.nome}</span>
-                </div>
-            `).join("");
-
             lv.innerHTML = `
-                <div class="levelContent">
-                    <div class="small">Ripiano ${li+1}</div>
-                    ${itemsHTML || '<div class="small">(vuoto)</div>'}
-                </div>
-                <div class="levelActions">
-                    <button class="danger" onclick="deleteLevel(${si},${li})">✖</button>
-                </div>
+                <div class="small">Ripiano ${li+1}</div>
+                <div>${oggetti.map(o=>"• "+o.nome).join("<br>") || "<span class='small'>(vuoto)</span>"}</div>
             `;
-
-            lv.ondragover = e=>e.preventDefault();
-            lv.ondrop = e=>dropItem(e,si,li);
 
             div.appendChild(lv);
         }
@@ -351,122 +324,27 @@ function renderShelves(){
     });
 }
 
-function salva(){
-
-    const nome = $("nome").value.trim();
-
-    if(!nome){
-        alert("Nome obbligatorio");
-        return;
-    }
-
-    if(editingItemId){
-
-        const i = inventario.find(x=>x.id==editingItemId);
-        if(i){
-            i.nome = nome;
-            i.categoria = $("categoria").value;
-            i.quantita = $("quantita").value;
-            i.shelf = $("selectShelf").value;
-            i.level = $("selectLevel").value;
-        }
-
-        editingItemId = null;
-
-    } else {
-
-        inventario.push({
-            id:Date.now(),
-            nome,
-            categoria:$("categoria").value,
-            quantita:$("quantita").value,
-            img:itemImgData,
-            shelf:$("selectShelf").value,
-            level:$("selectLevel").value
-        });
-    }
-
-    save();
-    renderItems();
-    renderShelves();
-}
-
-function dropItem(e,si,li){
-
-    const id = e.dataTransfer.getData("id");
-
-    inventario.forEach(i=>{
-        if(i.id == id){
-            i.shelf = si;
-            i.level = li;
-        }
-    });
-
-    save();
-    renderItems();
-    renderShelves();
-}
-
-function renderItems(){
-
-    const c = $("items");
-    c.innerHTML = "";
-
-    inventario.forEach(i=>{
-
-        const div = document.createElement("div");
-        div.className = "item";
-        div.draggable = true;
-
-        div.ondragstart = e=>e.dataTransfer.setData("id",i.id);
-
-        div.innerHTML = `
-            <div class="itemInfo">
-                ${i.img ? `<img src="${i.img}">` : ""}
-                <b>${i.nome}</b>
-            </div>
-            <div class="itemActions">
-                <button onclick="editItem(${i.id})">✏️</button>
-                <button class="danger" onclick="deleteItem(${i.id})">🗑</button>
-            </div>
-        `;
-
-        c.appendChild(div);
-    });
-}
-
-function editItem(id){
-    const i = inventario.find(x=>x.id==id);
-    if(!i) return;
-
-    $("nome").value = i.nome;
-    $("categoria").value = i.categoria;
-    $("quantita").value = i.quantita;
-
-    $("selectShelf").value = i.shelf;
-    updateLevels();
-    $("selectLevel").value = i.level;
-
-    editingItemId = id;
-}
-
-function deleteItem(id){
-    inventario = inventario.filter(i=>i.id!=id);
-    save();
-    renderItems();
-    renderShelves();
-}
+/* ---------------- FILTER SELECT ---------------- */
 
 function updateSelectors(){
 
     const s = $("selectShelf");
+    const fs = $("searchShelf");
+
     s.innerHTML = "";
+    fs.innerHTML = `<option value="">Tutti gli scaffali</option>`;
 
     scaffali.forEach((sh,i)=>{
-        const o = document.createElement("option");
-        o.value = i;
-        o.text = sh.nome;
-        s.appendChild(o);
+
+        const o1 = document.createElement("option");
+        o1.value = i;
+        o1.text = sh.nome;
+        s.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = i;
+        o2.text = sh.nome;
+        fs.appendChild(o2);
     });
 
     updateLevels();
@@ -489,10 +367,27 @@ function updateLevels(){
     }
 }
 
-$("selectShelf").onchange = updateLevels;
+/* ---------------- FILTER EVENTS ---------------- */
 
-renderShelves();
+function bindFilters(){
+    ["searchName","searchCategory","searchShelf"].forEach(id=>{
+        $(id).addEventListener("input", renderItems);
+        $(id).addEventListener("change", renderItems);
+    });
+}
+
+function resetFilters(){
+    $("searchName").value = "";
+    $("searchCategory").value = "";
+    $("searchShelf").value = "";
+    renderItems();
+}
+
+/* ---------------- INIT ---------------- */
+
+bindFilters();
 renderItems();
+renderShelves();
 updateSelectors();
 
 </script>
