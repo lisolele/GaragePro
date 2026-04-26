@@ -6,13 +6,17 @@
 
 <title>Garage Pro</title>
 
-<!-- ICONA iPHONE -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Garage Pro">
 
 <style>
+
+*{
+    box-sizing:border-box;
+}
+
 body{
     margin:0;
     font-family:-apple-system, sans-serif;
@@ -28,7 +32,11 @@ header{
     top:0;
 }
 
-.container{padding:12px; max-width:1000px; margin:auto;}
+.container{
+    padding:12px;
+    max-width:1000px;
+    margin:auto;
+}
 
 .section{
     background:white;
@@ -59,14 +67,17 @@ button{
 
 .shelfGrid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
     gap:10px;
+    width:100%;
 }
 
 .shelf{
     background:#f5f5f7;
     padding:10px;
     border-radius:12px;
+    max-width:100%;
+    overflow:hidden;
 }
 
 .shelfHeader{
@@ -96,6 +107,18 @@ button{
 
 .levelContent{
     flex:1;
+    min-width:0;
+}
+
+.levelContent > div{
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px;
+}
+
+.levelContent span,
+.levelContent div{
+    word-break:break-word;
 }
 
 .levelActions button{
@@ -143,7 +166,10 @@ button{
     border-radius:6px;
 }
 
-.small{font-size:10px; opacity:0.6;}
+.small{
+    font-size:10px;
+    opacity:0.6;
+}
 
 </style>
 </head>
