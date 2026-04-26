@@ -8,10 +8,7 @@
 
 <style>
 
-/* 🔥 FIX FONDAMENTALE */
-*{
-    box-sizing:border-box;
-}
+*{ box-sizing:border-box; }
 
 body{
     margin:0;
@@ -47,20 +44,14 @@ header{
     overflow:hidden;
 }
 
-/* INPUT FIX IOS */
+/* INPUT */
 input,select,button{
     width:100%;
-    max-width:100%;
     padding:12px;
     margin-top:8px;
     border-radius:12px;
     border:1px solid #ddd;
     font-size:15px;
-}
-
-input,select{
-    background:#fff;
-    -webkit-appearance:none;
 }
 
 button{
@@ -77,7 +68,6 @@ button{
     display:flex;
     gap:12px;
     overflow-x:auto;
-    padding-bottom:6px;
 }
 
 .shelf{
@@ -115,9 +105,19 @@ button{
     margin-top:8px;
     border-radius:12px;
     border:1px solid #eee;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
-/* UNDO BAR */
+/* HIGHLIGHT */
+mark{
+    background:#ffe066;
+    padding:2px 4px;
+    border-radius:6px;
+}
+
+/* UNDO */
 #undoBar{
     position:fixed;
     bottom:20px;
@@ -143,9 +143,21 @@ button{
 
 <div class="container">
 
-<!-- OGGETTI -->
+<!-- 🗄 SCAFFALI -->
+<div class="section">
+<h3>🗄️ Scaffali</h3>
+
+<input id="shelfName" placeholder="Nome scaffale">
+<button onclick="aggiungiScaffale()">Crea scaffale</button>
+
+<div id="shelfView" class="shelfGrid"></div>
+</div>
+
+<!-- 📦 OGGETTI -->
 <div class="section">
 <h3>📦 Oggetti</h3>
+
+<input id="search" placeholder="🔍 Cerca oggetti..." oninput="renderItems()">
 
 <input id="nome" placeholder="Nome">
 <input id="categoria" placeholder="Categoria">
@@ -154,16 +166,6 @@ button{
 <select id="selectLevel"></select>
 
 <button onclick="salva()">Salva oggetto</button>
-</div>
-
-<!-- SCAFFALI -->
-<div class="section">
-<h3>🗄️ Scaffali</h3>
-
-<input id="shelfName" placeholder="Nome scaffale">
-<button onclick="aggiungiScaffale()">Crea scaffale</button>
-
-<div id="shelfView" class="shelfGrid"></div>
 </div>
 
 <!-- LISTA -->
@@ -274,7 +276,6 @@ function aggiungiScaffale(){
     render();
 }
 
-/* ➕➖ RIPIANI */
 function changeLevels(i,delta){
 
     saveState();
@@ -310,15 +311,83 @@ function salva(){
     render();
 }
 
-/* ================= RENDER ================= */
+function editItem(id){
 
-function render(){
-    renderShelves();
-    renderItems();
-    updateSelectors();
+    const i = inventario.find(x=>x.id==id);
+    if(!i) return;
+
+    saveState();
+
+    $("nome").value = i.nome;
+    $("categoria").value = i.categoria;
+
+    $("selectShelf").value = i.shelf;
+    updateLevels();
+    $("selectLevel").value = i.level;
+
+    inventario = inventario.filter(x=>x.id!=id);
+
+    render();
 }
 
-/* ================= SCAFFALI UI INLINE ================= */
+function deleteItem(id){
+
+    saveState();
+
+    inventario = inventario.filter(i=>i.id!=id);
+
+    render();
+}
+
+/* ================= HIGHLIGHT ================= */
+
+function highlight(text, query){
+
+    if(!query) return text;
+
+    const regex = new RegExp(`(${query})`, "gi");
+
+    return text.replace(regex, "<mark>$1</mark>");
+}
+
+/* ================= ITEMS RENDER ================= */
+
+function renderItems(){
+
+    const c = $("items");
+    c.innerHTML = "";
+
+    const q = $("search").value.trim().toLowerCase();
+
+    inventario
+        .filter(i=>{
+            if(!q) return true;
+            return (
+                (i.nome||"").toLowerCase().includes(q) ||
+                (i.categoria||"").toLowerCase().includes(q)
+            );
+        })
+        .forEach(i=>{
+
+            const div = document.createElement("div");
+
+            div.innerHTML = `
+                <div>
+                    <b>${highlight(i.nome, q)}</b><br>
+                    <span class="small">${highlight(i.categoria||"", q)}</span>
+                </div>
+
+                <div style="display:flex;gap:6px;">
+                    <button onclick="editItem(${i.id})">✏️</button>
+                    <button onclick="deleteItem(${i.id})" class="danger">🗑</button>
+                </div>
+            `;
+
+            c.appendChild(div);
+        });
+}
+
+/* ================= SCAFFALI UI ================= */
 
 function renderShelves(){
 
@@ -370,21 +439,6 @@ function renderShelves(){
             div.appendChild(lv);
         }
 
-        c.appendChild(div);
-    });
-}
-
-/* ================= ITEMS ================= */
-
-function renderItems(){
-
-    const c=$("items");
-    c.innerHTML="";
-
-    inventario.forEach(i=>{
-
-        const div=document.createElement("div");
-        div.innerHTML=`<b>${i.nome}</b>`;
         c.appendChild(div);
     });
 }
