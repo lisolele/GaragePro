@@ -66,13 +66,12 @@ button:active{ transform:scale(0.98); }
 
 .danger{ background:#ff3b30; }
 
-/* ===== SCAFFALI ===== */
+/* SCAFFALI */
 
 .shelfGrid{
     display:flex;
     gap:12px;
     overflow-x:auto;
-    scroll-snap-type:x mandatory;
 }
 
 .shelfGrid::-webkit-scrollbar{ display:none; }
@@ -82,7 +81,6 @@ button:active{ transform:scale(0.98); }
     background:#f9f9fb;
     border-radius:18px;
     padding:12px;
-    scroll-snap-align:start;
     box-shadow:0 6px 18px rgba(0,0,0,0.05);
 }
 
@@ -93,8 +91,6 @@ button:active{ transform:scale(0.98); }
     margin-bottom:8px;
 }
 
-/* ===== LEVEL ===== */
-
 .level{
     background:white;
     border-radius:14px;
@@ -103,18 +99,49 @@ button:active{ transform:scale(0.98); }
     border:1px solid #eee;
 }
 
-/* ===== ITEMS ===== */
+.small{ font-size:11px; opacity:0.6; }
+
+/* ITEMS */
+
+.item{
+    background:white;
+    padding:10px;
+    margin-top:8px;
+    border-radius:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 3px 10px rgba(0,0,0,0.04);
+}
 
 .itemActions{
     display:flex;
     gap:6px;
 }
 
-/* ===== SMALL TEXT ===== */
+.itemActions button{
+    width:auto;
+    padding:5px 8px;
+    font-size:12px;
+    border-radius:10px;
+}
 
-.small{
-    font-size:11px;
-    opacity:0.6;
+/* UNDO UI */
+
+#undoBar{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#1c1c1e;
+    color:white;
+    padding:12px 14px;
+    border-radius:14px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    z-index:999;
+    font-size:14px;
 }
 
 </style>
@@ -126,7 +153,6 @@ button:active{ transform:scale(0.98); }
 
 <div class="container">
 
-<!-- OGGETTI -->
 <div class="section">
 <h3>📦 Oggetti</h3>
 
@@ -139,7 +165,6 @@ button:active{ transform:scale(0.98); }
 <button onclick="salva()">Salva oggetto</button>
 </div>
 
-<!-- SCAFFALI -->
 <div class="section">
 <h3>🗄️ Scaffali</h3>
 
@@ -151,16 +176,8 @@ button:active{ transform:scale(0.98); }
 <div id="shelfView" class="shelfGrid"></div>
 </div>
 
-<!-- LISTA -->
 <div class="section">
 <h3>📋 Lista oggetti</h3>
-
-<input id="searchName" placeholder="🔎 Nome">
-<input id="searchCategory" placeholder="🏷 Categoria">
-
-<select id="searchShelf"></select>
-
-<button onclick="resetFilters()" style="background:#8e8e93;">Reset</button>
 
 <div id="items"></div>
 </div>
@@ -169,10 +186,13 @@ button:active{ transform:scale(0.98); }
 
 <script>
 
+/* ================= STATE ================= */
+
 let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
 let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
 
-let editingItemId = null;
+let undoStack = [];
+let redoStack = [];
 
 const $ = id => document.getElementById(id);
 
@@ -181,27 +201,126 @@ function save(){
     localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
 }
 
+/* ================= SNAPSHOT ================= */
+
+function saveState(){
+
+    undoStack.push({
+        inventario: structuredClone(inventario),
+        scaffali: structuredClone(scaffali)
+    });
+
+    redoStack = [];
+
+    showUndo();
+}
+
+/* ================= UNDO ================= */
+
+function undo(){
+
+    if(undoStack.length === 0) return;
+
+    redoStack.push({
+        inventario: structuredClone(inventario),
+        scaffali: structuredClone(scaffali)
+    });
+
+    const state = undoStack.pop();
+
+    inventario = state.inventario;
+    scaffali = state.scaffali;
+
+    save();
+    renderItems();
+    renderShelves();
+    updateSelectors();
+
+    updateUndoUI();
+}
+
+/* ================= REDO ================= */
+
+function redo(){
+
+    if(redoStack.length === 0) return;
+
+    undoStack.push({
+        inventario: structuredClone(inventario),
+        scaffali: structuredClone(scaffali)
+    });
+
+    const state = redoStack.pop();
+
+    inventario = state.inventario;
+    scaffali = state.scaffali;
+
+    save();
+    renderItems();
+    renderShelves();
+    updateSelectors();
+
+    updateUndoUI();
+}
+
+/* ================= UNDO UI ================= */
+
+function showUndo(){
+
+    let bar = document.getElementById("undoBar");
+
+    if(!bar){
+        bar = document.createElement("div");
+        bar.id = "undoBar";
+        document.body.appendChild(bar);
+    }
+
+    updateUndoUI();
+}
+
+function updateUndoUI(){
+
+    const bar = document.getElementById("undoBar");
+    if(!bar) return;
+
+    if(undoStack.length === 0 && redoStack.length === 0){
+        bar.remove();
+        return;
+    }
+
+    bar.innerHTML = `
+        ⬅️ ${undoStack.length}
+        
+        <button onclick="undo()" style="
+            background:#007aff;
+            border:none;
+            color:white;
+            padding:6px 10px;
+            border-radius:10px;">
+            Undo
+        </button>
+
+        <button onclick="redo()" style="
+            background:#34c759;
+            border:none;
+            color:white;
+            padding:6px 10px;
+            border-radius:10px;">
+            Redo
+        </button>
+
+        ➡️ ${redoStack.length}
+    `;
+}
+
 /* ================= ITEMS ================= */
 
 function renderItems(){
 
     const c = $("items");
-
-    const nameQ = $("searchName").value.toLowerCase();
-    const catQ = $("searchCategory").value.toLowerCase();
-    const shelfQ = $("searchShelf").value;
-
     c.innerHTML = "";
 
-    inventario
-    .filter(i=>{
-        return (
-            (!nameQ || i.nome.toLowerCase().includes(nameQ)) &&
-            (!catQ || i.categoria.toLowerCase().includes(catQ)) &&
-            (!shelfQ || String(i.shelf) === String(shelfQ))
-        );
-    })
-    .forEach(i=>{
+    inventario.forEach(i=>{
 
         const div = document.createElement("div");
         div.className = "item";
@@ -221,66 +340,41 @@ function renderItems(){
     });
 }
 
-/* ================= EDIT / DELETE ================= */
-
-function editItem(id){
-    const i = inventario.find(x=>x.id==id);
-    if(!i) return;
-
-    $("nome").value = i.nome;
-    $("categoria").value = i.categoria;
-
-    editingItemId = id;
-}
+/* ================= ACTIONS ================= */
 
 function deleteItem(id){
+    saveState();
     inventario = inventario.filter(i=>i.id!=id);
     save();
     renderItems();
     renderShelves();
 }
 
-/* ================= SAVE ================= */
-
 function salva(){
 
     const nome = $("nome").value.trim();
-    if(!nome) return alert("Nome obbligatorio");
+    if(!nome) return;
 
-    if(editingItemId){
-
-        const i = inventario.find(x=>x.id==editingItemId);
-        if(i){
-            i.nome = nome;
-            i.categoria = $("categoria").value;
-        }
-
-        editingItemId = null;
-
-    } else {
-
-        inventario.push({
-            id:Date.now(),
-            nome,
-            categoria:$("categoria").value,
-            shelf:$("selectShelf").value,
-            level:$("selectLevel").value
-        });
-    }
+    inventario.push({
+        id:Date.now(),
+        nome,
+        categoria:$("categoria").value,
+        shelf:$("selectShelf").value,
+        level:$("selectLevel").value
+    });
 
     save();
     renderItems();
-    renderShelves();
 }
 
 /* ================= SCAFFALI ================= */
 
 function aggiungiScaffale(){
 
-    const nome = $("shelfName").value.trim();
-    const livelli = parseInt($("levels").value||1);
-
-    scaffali.push({nome, livelli});
+    scaffali.push({
+        nome:$("shelfName").value,
+        livelli:parseInt($("levels").value||1)
+    });
 
     save();
     renderShelves();
@@ -288,46 +382,25 @@ function aggiungiScaffale(){
 }
 
 function deleteShelf(si){
-
+    saveState();
     scaffali.splice(si,1);
-
-    inventario.forEach(i=>{
-        if(i.shelf==si){
-            i.shelf=null;
-            i.level=null;
-        }
-    });
-
     save();
     renderShelves();
     renderItems();
-    updateSelectors();
 }
 
 function deleteLevel(si,li){
-
+    saveState();
     scaffali[si].livelli--;
-
-    inventario.forEach(i=>{
-        if(i.shelf==si && i.level==li){
-            i.level=null;
-        }
-        if(i.shelf==si && i.level>li){
-            i.level--;
-        }
-    });
-
     save();
     renderShelves();
-    renderItems();
-    updateSelectors();
 }
 
-/* ================= SHELVES ================= */
+/* ================= RENDER ================= */
 
 function renderShelves(){
 
-    const c = $("shelfView");
+    const c=$("shelfView");
     c.innerHTML="";
 
     scaffali.forEach((s,si)=>{
@@ -347,37 +420,16 @@ function renderShelves(){
             const lv=document.createElement("div");
             lv.className="level";
 
-            const items=inventario.filter(i=>
-                String(i.shelf)==String(si) &&
-                String(i.level)==String(li)
-            );
+            const items=inventario.filter(i=>i.shelf==si && i.level==li);
 
-            /* ✅ ICONA CESTINO SEMPRE VISIBILE */
-            lv.innerHTML = `
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    margin-bottom:6px;
-                ">
+            lv.innerHTML=`
+                <div style="display:flex;justify-content:space-between;">
                     <div class="small">Ripiano ${li+1}</div>
-
                     <button onclick="deleteLevel(${si},${li})"
-                        style="
-                            width:28px;
-                            height:28px;
-                            border:none;
-                            border-radius:8px;
-                            background:#f2f2f7;
-                            font-size:14px;
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                        ">
+                        style="border:none;background:#f2f2f7;border-radius:8px;">
                         🗑
                     </button>
                 </div>
-
                 <div>
                     ${items.map(o=>"• "+o.nome).join("<br>")||"<span class='small'>(vuoto)</span>"}
                 </div>
@@ -395,52 +447,15 @@ function renderShelves(){
 function updateSelectors(){
 
     const s=$("selectShelf");
-    const fs=$("searchShelf");
-
     s.innerHTML="";
-    fs.innerHTML=`<option value="">Tutti</option>`;
 
     scaffali.forEach((sh,i)=>{
         s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
-        fs.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
     });
-
-    updateLevels();
-}
-
-function updateLevels(){
-
-    const i=$("selectShelf").value;
-    const lv=$("selectLevel");
-
-    lv.innerHTML="";
-
-    if(!scaffali[i]) return;
-
-    for(let j=0;j<scaffali[i].livelli;j++){
-        lv.innerHTML+=`<option value="${j}">Ripiano ${j+1}</option>`;
-    }
-}
-
-/* ================= FILTERS ================= */
-
-function bindFilters(){
-    ["searchName","searchCategory","searchShelf"].forEach(id=>{
-        $(id).addEventListener("input",renderItems);
-        $(id).addEventListener("change",renderItems);
-    });
-}
-
-function resetFilters(){
-    $("searchName").value="";
-    $("searchCategory").value="";
-    $("searchShelf").value="";
-    renderItems();
 }
 
 /* ================= INIT ================= */
 
-bindFilters();
 renderItems();
 renderShelves();
 updateSelectors();
