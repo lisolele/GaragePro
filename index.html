@@ -48,6 +48,8 @@ button{
     background:#ff3b30;
 }
 
+/* --- SCAFFALI --- */
+
 .shelfGrid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
@@ -60,22 +62,43 @@ button{
     border-radius:12px;
 }
 
+.shelfHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.shelfActions button{
+    width:auto;
+    padding:3px 6px;
+    font-size:10px;
+    border-radius:6px;
+}
+
 .level{
-    background:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:6px;
     margin-top:6px;
     padding:6px;
     border-radius:8px;
     border:1px dashed #ccc;
-    position:relative;
+    background:white;
 }
 
-.levelDelete{
-    position:absolute;
-    right:4px;
-    top:4px;
-    font-size:10px;
-    padding:2px 6px;
+.levelContent{
+    flex:1;
 }
+
+.levelActions button{
+    width:auto;
+    padding:2px 5px;
+    font-size:10px;
+    border-radius:6px;
+}
+
+/* --- OGGETTI --- */
 
 .item{
     background:white;
@@ -84,6 +107,7 @@ button{
     border-radius:8px;
     display:flex;
     justify-content:space-between;
+    align-items:center;
     font-size:12px;
 }
 
@@ -92,6 +116,24 @@ button{
     height:26px;
     border-radius:5px;
     object-fit:cover;
+}
+
+.itemInfo{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.itemActions{
+    display:flex;
+    gap:5px;
+}
+
+.itemActions button{
+    width:auto;
+    padding:3px 6px;
+    font-size:10px;
+    border-radius:6px;
 }
 
 .small{font-size:10px; opacity:0.6;}
@@ -148,7 +190,6 @@ let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
 let editingItemId = null;
 let itemImgData = null;
 
-// helper iOS safe
 const $ = id => document.getElementById(id);
 
 function save(){
@@ -224,7 +265,8 @@ function deleteLevel(si,li){
     updateSelectors();
 }
 
-// ⭐ RENDER SCAFFALI CON OGGETTI DENTRO
+// ===== SCAFFALI RENDER =====
+
 function renderShelves(){
 
     const c = $("shelfView");
@@ -236,8 +278,12 @@ function renderShelves(){
         div.className = "shelf";
 
         div.innerHTML = `
-            <b>${s.nome}</b>
-            <button class="danger" onclick="deleteShelf(${si})">🗑</button>
+            <div class="shelfHeader">
+                <b>${s.nome}</b>
+                <div class="shelfActions">
+                    <button class="danger" onclick="deleteShelf(${si})">🗑</button>
+                </div>
+            </div>
         `;
 
         for(let li=0; li<s.livelli; li++){
@@ -250,29 +296,22 @@ function renderShelves(){
                 String(i.level) === String(li)
             );
 
-            let html = `<div class="small">Ripiano ${li+1}</div>`;
+            let itemsHTML = oggetti.map(o => `
+                <div style="display:flex;gap:5px;align-items:center;">
+                    ${o.img ? `<img src="${o.img}" width="18">` : ""}
+                    <span style="font-size:11px;">${o.nome}</span>
+                </div>
+            `).join("");
 
-            if(oggetti.length === 0){
-                html += `<div class="small">(vuoto)</div>`;
-            }
-
-            oggetti.forEach(o=>{
-                html += `
-                    <div style="display:flex;gap:5px;align-items:center;">
-                        ${o.img ? `<img src="${o.img}" width="20">` : ""}
-                        <span style="font-size:11px;">${o.nome}</span>
-                    </div>
-                `;
-            });
-
-            lv.innerHTML = html;
-
-            const del = document.createElement("button");
-            del.className = "levelDelete";
-            del.innerText = "✖";
-            del.onclick = ()=>deleteLevel(si,li);
-
-            lv.appendChild(del);
+            lv.innerHTML = `
+                <div class="levelContent">
+                    <div class="small">Ripiano ${li+1}</div>
+                    ${itemsHTML || '<div class="small">(vuoto)</div>'}
+                </div>
+                <div class="levelActions">
+                    <button class="danger" onclick="deleteLevel(${si},${li})">✖</button>
+                </div>
+            `;
 
             lv.ondragover = e=>e.preventDefault();
             lv.ondrop = e=>dropItem(e,si,li);
@@ -326,7 +365,7 @@ function salva(){
     renderShelves();
 }
 
-// DROP
+// DRAG DROP
 function dropItem(e,si,li){
 
     const id = e.dataTransfer.getData("id");
@@ -343,7 +382,7 @@ function dropItem(e,si,li){
     renderShelves();
 }
 
-// RENDER ITEMS
+// LISTA OGGETTI
 function renderItems(){
 
     const c = $("items");
@@ -358,13 +397,13 @@ function renderItems(){
         div.ondragstart = e=>e.dataTransfer.setData("id",i.id);
 
         div.innerHTML = `
-            <div>
+            <div class="itemInfo">
                 ${i.img ? `<img src="${i.img}">` : ""}
                 <b>${i.nome}</b>
             </div>
-            <div>
+            <div class="itemActions">
                 <button onclick="editItem(${i.id})">✏️</button>
-                <button onclick="deleteItem(${i.id})">🗑</button>
+                <button class="danger" onclick="deleteItem(${i.id})">🗑</button>
             </div>
         `;
 
