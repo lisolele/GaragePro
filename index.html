@@ -3,405 +3,324 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garage Pro</title>
+<title>Garage Pro iOS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-    margin: 0;
-    font-family: "Segoe UI", sans-serif;
-    background: #f1f5f9;
+:root{
+    --bg:#f2f2f7;
+    --card:#ffffffcc;
+    --text:#111;
+    --accent:#007aff;
+    --radius:18px;
 }
 
-header {
-    background: #0f172a;
-    color: white;
-    padding: 15px;
-    text-align: center;
+body{
+    margin:0;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:var(--bg);
+    color:var(--text);
 }
 
-.container {
-    padding: 15px;
-    max-width: 1100px;
-    margin: auto;
+header{
+    padding:18px;
+    text-align:center;
+    font-weight:600;
+    font-size:20px;
+    background:rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    position:sticky;
+    top:0;
 }
 
-.cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
-    gap: 10px;
+.container{padding:15px; max-width:1000px; margin:auto;}
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
 }
 
-.card {
-    background: white;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: center;
+.card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:15px;
+    text-align:center;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
 }
 
-input, select, button {
-    padding: 10px;
-    margin: 5px 0;
-    width: 100%;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+input,select{
+    width:100%;
+    padding:12px;
+    margin:5px 0;
+    border-radius:12px;
+    border:1px solid #ddd;
+    background:white;
 }
 
-button {
-    background: #22c55e;
-    color: white;
-    border: none;
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    background:var(--accent);
+    color:white;
+    font-weight:600;
 }
 
-.table-container {
-    overflow-x: auto;
+.section{
+    margin-top:18px;
+    padding:15px;
+    background:white;
+    border-radius:12px;
 }
 
-table {
-    width: 100%;
-    background: white;
-    border-radius: 10px;
-    border-collapse: collapse;
+.shelfGrid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:10px;
+    perspective:1000px;
 }
 
-th {
-    background: #1e293b;
-    color: white;
-    padding: 10px;
+.shelf{
+    background:#f5f5f7;
+    border-radius:12px;
+    padding:10px;
+    transform:rotateX(8deg);
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    min-height:120px;
+    overflow:hidden;
 }
 
-td {
-    padding: 8px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
+.shelf img{
+    width:100%;
+    height:60px;
+    object-fit:cover;
+    border-radius:10px;
+    margin-bottom:6px;
 }
 
-.badge {
-    padding: 4px 8px;
-    border-radius: 5px;
-    color: white;
-    font-size: 12px;
+.badge{
+    background:#007aff;
+    color:white;
+    padding:3px 8px;
+    border-radius:8px;
+    font-size:12px;
 }
 
-img.preview {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
-    border-radius: 5px;
+.item{
+    padding:6px;
+    margin:4px 0;
+    background:#fff;
+    border-radius:8px;
+    font-size:12px;
+    cursor:grab;
 }
 
-.actions button {
-    margin: 2px;
-    padding: 5px;
+.dropzone{
+    min-height:40px;
 }
 
-canvas {
-    margin-top: 20px;
-    background: white;
-    border-radius: 10px;
-    padding: 10px;
-}
 </style>
 </head>
 
 <body>
 
-<header>
-    <h2>🚗 Garage Pro</h2>
-</header>
-    
-<button onclick="esportaJSON()">📤 Esporta JSON</button>
-<input type="file" id="importFile" accept="application/json" onchange="importaJSON(event)">
+<header>🚗 Garage Pro iOS</header>
+
 <div class="container">
 
+<!-- DASHBOARD -->
 <div class="cards">
     <div class="card">
-        <h3 id="totale">0</h3>
-        <p>Oggetti</p>
+        <h2 id="tot">0</h2>
+        <div>Oggetti</div>
     </div>
     <div class="card">
-        <h3 id="categorie">0</h3>
-        <p>Categorie</p>
+        <h2 id="cat">0</h2>
+        <div>Categorie</div>
     </div>
 </div>
 
-<input id="search" placeholder="🔍 Cerca..." onkeyup="filtra()">
-
-<!-- FILTRI -->
-<div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <select id="filtroCategoria" onchange="filtra()"></select>
-
-    <select id="filtroCondizione" onchange="filtra()">
-        <option value="">Tutte le condizioni</option>
-        <option>Nuovo</option>
-        <option>Buono</option>
-        <option>Discreto</option>
-    </select>
-</div>
-
-<h3>Aggiungi / Modifica</h3>
+<!-- OGGETTI -->
+<div class="section">
+<h3>📦 Oggetti</h3>
 
 <input id="nome" placeholder="Nome">
 <input id="categoria" placeholder="Categoria">
 <input id="quantita" type="number" placeholder="Quantità">
 
-<select id="condizione">
-    <option>Nuovo</option>
-    <option>Buono</option>
-    <option>Discreto</option>
-</select>
+<select id="scaffale"></select>
 
-<input id="posizione" placeholder="Posizione">
-
-<input type="file" id="immagine" accept="image/*">
-<img id="anteprima" style="max-width:100px; display:none;">
-
-<button onclick="salvaOggetto()">💾 Salva</button>
-
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th></th>
-<th>Nome</th>
-<th>Categoria</th>
-<th>Qtà</th>
-<th>Condizione</th>
-<th>Posizione</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="tabella"></tbody>
-</table>
+<button onclick="salva()">Salva oggetto</button>
 </div>
 
-<canvas id="grafico"></canvas>
+<!-- SCAFFALI -->
+<div class="section">
+<h3>🗄️ Scaffali 3D</h3>
+
+<input id="shelfName" placeholder="Nome scaffale">
+<input type="file" id="shelfImg">
+<input id="levels" type="number" placeholder="Numero ripiani">
+
+<button onclick="aggiungiScaffale()">Crea scaffale</button>
+
+<div id="shelfView" class="shelfGrid"></div>
+</div>
+
+<!-- INVENTARIO -->
+<div class="section">
+<h3>📋 Inventario (drag & drop)</h3>
+<div id="items"></div>
+</div>
+
+<!-- GRAFICO -->
+<canvas id="chart"></canvas>
 
 </div>
 
 <script>
 
-let inventario = JSON.parse(localStorage.getItem("garage")) || [];
-let editIndex = null;
-let immagineBase64 = null;
+let inventario = JSON.parse(localStorage.getItem("garage_drag")) || [];
+let scaffali = JSON.parse(localStorage.getItem("garage_shelves")) || [];
+let chart;
+let shelfImgData = null;
 
-const colori = {};
-
-function coloreCategoria(cat) {
-    if (!colori[cat]) {
-        colori[cat] = "#" + Math.floor(Math.random()*16777215).toString(16);
-    }
-    return colori[cat];
+// SAVE
+function save(){
+    localStorage.setItem("garage_drag", JSON.stringify(inventario));
+    localStorage.setItem("garage_shelves", JSON.stringify(scaffali));
 }
 
-// UPLOAD IMMAGINE
-immagine.onchange = function() {
-    const file = this.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        immagineBase64 = e.target.result;
-        anteprima.src = immagineBase64;
-        anteprima.style.display = "block";
-    };
+// IMAGE SCAFFALE
+shelfImg.onchange = e=>{
+    let file = e.target.files[0];
+    let reader = new FileReader();
+    reader.onload = ev => shelfImgData = ev.target.result;
     reader.readAsDataURL(file);
 };
 
-function salvaStorage() {
-    localStorage.setItem("garage", JSON.stringify(inventario));
+// CREA SCAFFALE
+function aggiungiScaffale(){
+    scaffali.push({
+        nome:shelfName.value,
+        livelli:parseInt(levels.value || 1),
+        img:shelfImgData
+    });
+
+    save();
+    renderShelves();
+    updateSelect();
 }
 
-// SALVA / MODIFICA
-function salvaOggetto() {
+// RENDER SCAFFALI
+function renderShelves(){
+    shelfView.innerHTML = "";
 
-    let obj = {
+    scaffali.forEach((s,i)=>{
+
+        let div = document.createElement("div");
+        div.className = "shelf dropzone";
+
+        div.ondragover = e => e.preventDefault();
+        div.ondrop = e => dropItem(e,i);
+
+        div.innerHTML = `
+            ${s.img ? `<img src="${s.img}">` : ""}
+            <div><b>${s.nome}</b></div>
+            <div class="badge">${s.livelli} livelli</div>
+        `;
+
+        shelfView.appendChild(div);
+    });
+}
+
+// AGGIUNGI OGGETTO
+function salva(){
+    inventario.push({
+        id: Date.now(),
         nome: nome.value,
         categoria: categoria.value,
         quantita: quantita.value,
-        condizione: condizione.value,
-        posizione: posizione.value,
-        immagine: immagineBase64
-    };
-
-    if (!obj.nome) return alert("Inserisci nome");
-
-    if (editIndex !== null) {
-        inventario[editIndex] = obj;
-        editIndex = null;
-    } else {
-        inventario.push(obj);
-    }
-
-    salvaStorage();
-    pulisci();
-    mostra();
-}
-
-// MOSTRA
-function mostra(lista = inventario) {
-    tabella.innerHTML = "";
-
-    lista.forEach((item, i) => {
-        let colore = coloreCategoria(item.categoria);
-
-        tabella.innerHTML += `
-        <tr>
-            <td>${item.immagine ? `<img src="${item.immagine}" class="preview">` : ""}</td>
-            <td>${item.nome}</td>
-            <td><span class="badge" style="background:${colore}">${item.categoria}</span></td>
-            <td>${item.quantita}</td>
-            <td>${item.condizione}</td>
-            <td>${item.posizione}</td>
-            <td class="actions">
-                <button onclick="modifica(${i})">✏️</button>
-                <button onclick="elimina(${i})">❌</button>
-            </td>
-        </tr>`;
+        shelf: null
     });
 
-    aggiornaDashboard();
-    aggiornaGrafico();
-    aggiornaFiltri();
+    save();
+    renderItems();
 }
 
-// MODIFICA
-function modifica(i) {
-    let item = inventario[i];
+// RENDER OGGETTI
+function renderItems(){
+    items.innerHTML = "";
 
-    nome.value = item.nome;
-    categoria.value = item.categoria;
-    quantita.value = item.quantita;
-    condizione.value = item.condizione;
-    posizione.value = item.posizione;
+    inventario.forEach(i=>{
+        let div = document.createElement("div");
+        div.className = "item";
+        div.draggable = true;
 
-    immagineBase64 = item.immagine || null;
-    if (immagineBase64) {
-        anteprima.src = immagineBase64;
-        anteprima.style.display = "block";
-    }
+        div.ondragstart = e => e.dataTransfer.setData("id", i.id);
 
-    editIndex = i;
-}
+        div.innerHTML = `${i.nome} (${i.categoria}) - ${i.quantita}`;
 
-// ELIMINA
-function elimina(i) {
-    inventario.splice(i, 1);
-    salvaStorage();
-    mostra();
-}
-
-// FILTRI
-function aggiornaFiltri() {
-    let select = filtroCategoria;
-    let categorie = [...new Set(inventario.map(i => i.categoria))];
-
-    select.innerHTML = `<option value="">Tutte le categorie</option>`;
-    categorie.forEach(c => {
-        select.innerHTML += `<option value="${c}">${c}</option>`;
+        items.appendChild(div);
     });
 }
 
-function filtra() {
-    let q = search.value.toLowerCase();
-    let cat = filtroCategoria.value;
-    let cond = filtroCondizione.value;
+// DROP
+function dropItem(e, shelfIndex){
+    let id = e.dataTransfer.getData("id");
 
-    let filtrati = inventario.filter(i => {
-
-        let matchRicerca =
-            i.nome.toLowerCase().includes(q) ||
-            i.categoria.toLowerCase().includes(q);
-
-        let matchCategoria = !cat || i.categoria === cat;
-        let matchCondizione = !cond || i.condizione === cond;
-
-        return matchRicerca && matchCategoria && matchCondizione;
+    inventario.forEach(i=>{
+        if(i.id == id){
+            i.shelf = scaffali[shelfIndex].nome;
+        }
     });
 
-    mostra(filtrati);
+    save();
+    renderItems();
 }
 
-// DASHBOARD
-function aggiornaDashboard() {
-    totale.innerText = inventario.length;
-    categorie.innerText = new Set(inventario.map(i => i.categoria)).size;
+// SELECT
+function updateSelect(){
+    scaffale.innerHTML = "";
+
+    scaffali.forEach(s=>{
+        let opt = document.createElement("option");
+        opt.value = s.nome;
+        opt.text = s.nome;
+        scaffale.appendChild(opt);
+    });
 }
 
 // GRAFICO
-let chart;
+function grafico(){
+    let m = {};
 
-function aggiornaGrafico() {
-    let conteggio = {};
-
-    inventario.forEach(i => {
-        conteggio[i.categoria] = (conteggio[i.categoria] || 0) + 1;
+    inventario.forEach(i=>{
+        m[i.categoria] = (m[i.categoria] || 0) + 1;
     });
 
-    let labels = Object.keys(conteggio);
-    let data = Object.values(conteggio);
+    if(chart) chart.destroy();
 
-    if (chart) chart.destroy();
-
-    chart = new Chart(grafico, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{ data: data }]
+    chart = new Chart(chart.getContext('2d'),{
+        type:'bar',
+        data:{
+            labels:Object.keys(m),
+            datasets:[{data:Object.values(m)}]
         }
     });
 }
 
-// RESET FORM
-function pulisci() {
-    document.querySelectorAll("input").forEach(i => i.value = "");
-    immagineBase64 = null;
-    anteprima.style.display = "none";
+// INIT
+function init(){
+    renderShelves();
+    renderItems();
+    updateSelect();
 }
 
-// AVVIO
-mostra();
-function esportaJSON() {
-    const dataStr = JSON.stringify(inventario, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
+init();
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "garage_backup.json";
-    a.click();
-
-    URL.revokeObjectURL(url);
-}
-
-function importaJSON(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-
-            if (!Array.isArray(data)) {
-                alert("File non valido");
-                return;
-            }
-
-            inventario = data;
-            salvaStorage();
-            mostra();
-
-            alert("Import completato!");
-        } catch (err) {
-            alert("Errore nel file JSON");
-        }
-    };
-
-    reader.readAsText(file);
-}
-    
 </script>
 
 </body>
