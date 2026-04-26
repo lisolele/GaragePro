@@ -14,6 +14,7 @@
     --text:#111;
     --accent:#007aff;
     --radius:18px;
+    --danger:#ff3b30;
 }
 
 body{
@@ -87,6 +88,14 @@ button{
     border-radius:12px;
     padding:10px;
     box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    position:relative;
+}
+
+.shelfHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:6px;
 }
 
 .level{
@@ -95,6 +104,7 @@ button{
     border-radius:10px;
     background:#ffffff;
     min-height:40px;
+    position:relative;
 }
 
 .level.dropzone{
@@ -127,6 +137,28 @@ button{
 .small{
     font-size:11px;
     opacity:0.7;
+}
+
+.dangerBtn{
+    background:var(--danger);
+    color:white;
+    border:none;
+    padding:4px 8px;
+    border-radius:8px;
+    font-size:11px;
+    width:auto;
+}
+
+.levelDelete{
+    position:absolute;
+    top:4px;
+    right:4px;
+    background:var(--danger);
+    color:white;
+    border:none;
+    border-radius:6px;
+    font-size:10px;
+    padding:2px 5px;
 }
 
 </style>
@@ -209,6 +241,42 @@ shelfImg.onchange = e=>{
     r.readAsDataURL(f);
 };
 
+// DELETE SCAFFALE
+function deleteShelf(si){
+    scaffali.splice(si,1);
+
+    inventario.forEach(i=>{
+        if(i.shelf==si){
+            i.shelf=null;
+            i.level=null;
+        }
+    });
+
+    save();
+    renderShelves();
+    updateSelectors();
+    renderItems();
+}
+
+// DELETE LEVEL
+function deleteLevel(si,li){
+    scaffali[si].livelli--;
+
+    inventario.forEach(i=>{
+        if(i.shelf==si && i.level==li){
+            i.level=null;
+        }
+        if(i.shelf==si && i.level>li){
+            i.level--;
+        }
+    });
+
+    save();
+    renderShelves();
+    renderItems();
+    updateSelectors();
+}
+
 // SCAFFALI
 function aggiungiScaffale(){
     scaffali.push({
@@ -231,14 +299,24 @@ function renderShelves(){
         div.className="shelf";
 
         div.innerHTML=`
+            <div class="shelfHeader">
+                <b>${s.nome}</b>
+                <button class="dangerBtn" onclick="deleteShelf(${si})">🗑</button>
+            </div>
             ${s.img?`<img src="${s.img}">`:""}
-            <div><b>${s.nome}</b></div>
         `;
 
         for(let i=0;i<s.livelli;i++){
             const lv=document.createElement("div");
             lv.className="level dropzone";
             lv.textContent="Ripiano "+(i+1);
+
+            const del=document.createElement("button");
+            del.textContent="✖";
+            del.className="levelDelete";
+            del.onclick=()=>deleteLevel(si,i);
+
+            lv.appendChild(del);
 
             lv.ondragover=e=>e.preventDefault();
             lv.ondrop=e=>dropItem(e,si,i);
@@ -286,7 +364,6 @@ selectShelf.onchange=()=>{
 
 selectLevel.onchange=syncFromDropdown;
 
-// SYNC DROPDOWN -> ITEM
 function syncFromDropdown(){
     if(selectedItemId===null) return;
 
@@ -300,12 +377,11 @@ function syncFromDropdown(){
     renderItems();
 }
 
-// SALVA
+// OGGETTI
 function salva(){
-    const id=Date.now();
 
     inventario.push({
-        id,
+        id:Date.now(),
         nome:nome.value,
         categoria:categoria.value,
         quantita:quantita.value,
@@ -319,8 +395,8 @@ function salva(){
     updateStats();
 }
 
-// RENDER ITEMS
 function renderItems(){
+
     items.innerHTML="";
 
     inventario.forEach(i=>{
@@ -329,7 +405,13 @@ function renderItems(){
         div.className="item"+(selectedItemId===i.id?" selected":"");
         div.draggable=true;
 
-        div.onclick=()=>selectItem(i.id);
+        div.onclick=()=>{
+            selectedItemId=i.id;
+            selectShelf.value=i.shelf||0;
+            updateLevels();
+            selectLevel.value=i.level||0;
+            renderItems();
+        };
 
         div.ondragstart=e=>e.dataTransfer.setData("id",i.id);
 
@@ -343,21 +425,6 @@ function renderItems(){
     });
 }
 
-// SELECT ITEM
-function selectItem(id){
-    selectedItemId=id;
-
-    const i=inventario.find(x=>x.id==id);
-    if(!i) return;
-
-    selectShelf.value=i.shelf||0;
-    updateLevels();
-    selectLevel.value=i.level||0;
-
-    renderItems();
-}
-
-// DROP
 function dropItem(e,si,li){
 
     const id=e.dataTransfer.getData("id");
@@ -373,7 +440,6 @@ function dropItem(e,si,li){
     renderItems();
 }
 
-// STATS
 function updateStats(){
     tot.innerText=inventario.length;
     cat.innerText=[...new Set(inventario.map(i=>i.categoria))].length;
