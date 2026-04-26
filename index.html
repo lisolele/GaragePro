@@ -8,10 +8,16 @@
 
 <style>
 
+/* 🔥 FIX FONDAMENTALE */
+*{
+    box-sizing:border-box;
+}
+
 body{
     margin:0;
     font-family:-apple-system, BlinkMacSystemFont, sans-serif;
     background:#f2f2f7;
+    color:#111;
 }
 
 header{
@@ -21,23 +27,40 @@ header{
     font-weight:700;
     position:sticky;
     top:0;
+    z-index:10;
+    border-bottom:1px solid #eee;
 }
 
-.container{ padding:14px; max-width:900px; margin:auto; }
+.container{
+    padding:14px;
+    max-width:900px;
+    margin:auto;
+}
 
+/* CARD */
 .section{
     background:white;
-    padding:14px;
+    padding:18px;
     margin-top:14px;
     border-radius:18px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.04);
+    overflow:hidden;
 }
 
+/* INPUT FIX IOS */
 input,select,button{
     width:100%;
+    max-width:100%;
     padding:12px;
     margin-top:8px;
     border-radius:12px;
     border:1px solid #ddd;
+    font-size:15px;
+}
+
+input,select{
+    background:#fff;
+    -webkit-appearance:none;
 }
 
 button{
@@ -50,11 +73,11 @@ button{
 .danger{ background:#ff3b30; }
 
 /* SCAFFALI */
-
 .shelfGrid{
     display:flex;
     gap:12px;
     overflow-x:auto;
+    padding-bottom:6px;
 }
 
 .shelf{
@@ -71,6 +94,7 @@ button{
     gap:10px;
 }
 
+/* RIPIANI */
 .level{
     background:white;
     margin-top:10px;
@@ -79,10 +103,21 @@ button{
     border:1px solid #eee;
 }
 
-.small{ font-size:11px; opacity:0.6; }
+.small{
+    font-size:11px;
+    opacity:0.6;
+}
+
+/* ITEMS */
+#items div{
+    background:white;
+    padding:10px;
+    margin-top:8px;
+    border-radius:12px;
+    border:1px solid #eee;
+}
 
 /* UNDO BAR */
-
 #undoBar{
     position:fixed;
     bottom:20px;
@@ -96,6 +131,7 @@ button{
     gap:10px;
     align-items:center;
     font-size:14px;
+    z-index:999;
 }
 
 </style>
@@ -164,6 +200,7 @@ function saveState(){
         inventario: structuredClone(inventario),
         scaffali: structuredClone(scaffali)
     });
+
     redoStack = [];
     showUndo();
 }
@@ -237,7 +274,7 @@ function aggiungiScaffale(){
     render();
 }
 
-/* ➕➖ RIPIANI INLINE */
+/* ➕➖ RIPIANI */
 function changeLevels(i,delta){
 
     saveState();
@@ -296,7 +333,6 @@ function renderShelves(){
         div.innerHTML=`
             <div class="shelfHeader">
 
-                <!-- INLINE EDIT NAME -->
                 <input value="${s.nome}"
                     style="
                         border:none;
@@ -309,7 +345,6 @@ function renderShelves(){
                     oninput="scaffali[${i}].nome=this.value; save();"
                 >
 
-                <!-- RIPIANI -->
                 <div style="display:flex;gap:6px;">
                     <button onclick="changeLevels(${i},1)">+</button>
                     <button onclick="changeLevels(${i},-1)" class="danger">-</button>
