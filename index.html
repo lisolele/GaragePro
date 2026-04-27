@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Garage Pro</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
 *{box-sizing:border-box}
 
@@ -25,11 +27,13 @@ justify-content:space-between;
 align-items:center;
 padding:10px 12px;
 font-weight:700;
+z-index:10;
 }
 
 .actions{
 display:flex;
 gap:6px;
+align-items:center;
 }
 
 .actions button{
@@ -43,7 +47,7 @@ border:none;
 cursor:pointer;
 }
 
-/* layout */
+/* LAYOUT */
 .container{padding:12px;max-width:900px;margin:auto}
 
 .section{
@@ -68,7 +72,7 @@ border:none;
 font-weight:600;
 }
 
-/* items */
+/* ITEMS */
 .item{
 display:flex;
 gap:10px;
@@ -82,13 +86,14 @@ cursor:pointer;
 }
 
 .item img{
-width:50px;height:50px;
+width:50px;
+height:50px;
 border-radius:10px;
 object-fit:cover;
 background:#eee;
 }
 
-/* modal */
+/* MODAL */
 #modal{
 display:none;
 position:fixed;
@@ -96,6 +101,7 @@ inset:0;
 background:rgba(0,0,0,.6);
 justify-content:center;
 align-items:center;
+z-index:20;
 }
 
 .box{
@@ -113,7 +119,7 @@ margin-top:10px;
 cursor:zoom-in;
 }
 
-/* zoom */
+/* ZOOM */
 #zoom{
 display:none;
 position:fixed;
@@ -121,6 +127,7 @@ inset:0;
 background:#000;
 justify-content:center;
 align-items:center;
+z-index:30;
 }
 
 #zoom img{
@@ -136,8 +143,15 @@ max-height:100%;
 <div>🚗 Garage Pro</div>
 
 <div class="actions">
+
 <button onclick="undo()">↩</button>
 <button onclick="redo()">↪</button>
+<button onclick="exportPDF()">📄</button>
+
+<button onclick="exportData()">⬇</button>
+<button onclick="document.getElementById('fileInput').click()">⬆</button>
+
+<input id="fileInput" type="file" hidden accept="application/json" onchange="importData(event)">
 </div>
 </header>
 
@@ -146,7 +160,7 @@ max-height:100%;
 <div class="section">
 <h3>Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<button onclick="addShelf()">Crea</button>
+<button onclick="addShelf()">Crea scaffale</button>
 <div id="shelfView"></div>
 </div>
 
@@ -157,16 +171,15 @@ max-height:100%;
 <input id="itemCat" placeholder="Categoria">
 
 <input type="file" id="fileImg" accept="image/*">
-<img id="preview" style="width:60px;display:none;margin-top:6px;border-radius:8px">
 
 <select id="shelfSelect"></select>
 <select id="levelSelect"></select>
 
-<button onclick="addItem()">Aggiungi</button>
+<button onclick="addItem()">Aggiungi oggetto</button>
 </div>
 
 <div class="section">
-<h3>Lista</h3>
+<h3>Inventario</h3>
 <div id="items"></div>
 </div>
 
@@ -200,7 +213,14 @@ let redoStack = [];
 
 const $ = id => document.getElementById(id);
 
-/* ================= SNAPSHOT ENGINE ================= */
+/* ================= SAVE ================= */
+
+function save(){
+localStorage.setItem("shel", JSON.stringify(state.scaffali));
+localStorage.setItem("inv", JSON.stringify(state.inventario));
+}
+
+/* ================= SNAPSHOT ================= */
 
 function snapshot(){
 return JSON.stringify(state);
@@ -210,37 +230,25 @@ function restore(s){
 state = JSON.parse(s);
 }
 
-/* salva in history prima di ogni modifica */
+/* ================= UNDO / REDO ================= */
+
 function pushUndo(){
 undoStack.push(snapshot());
 redoStack = [];
 }
 
-/* ================= SAVE ================= */
-
-function save(){
-localStorage.setItem("shel", JSON.stringify(state.scaffali));
-localStorage.setItem("inv", JSON.stringify(state.inventario));
-}
-
-/* ================= UNDO / REDO ================= */
-
 function undo(){
 if(!undoStack.length) return;
-
 redoStack.push(snapshot());
 restore(undoStack.pop());
-
 save();
 render();
 }
 
 function redo(){
 if(!redoStack.length) return;
-
 undoStack.push(snapshot());
 restore(redoStack.pop());
-
 save();
 render();
 }
@@ -254,14 +262,6 @@ r.onload = ()=>res(r.result);
 r.readAsDataURL(file);
 });
 }
-
-/* preview */
-$("fileImg").onchange = e=>{
-let f = e.target.files[0];
-if(!f) return;
-$("preview").src = URL.createObjectURL(f);
-$("preview").style.display="block";
-};
 
 /* ================= SCAFFALI ================= */
 
@@ -290,7 +290,7 @@ if(!name) return;
 
 pushUndo();
 
-let img = "";
+let img="";
 const file = $("fileImg").files[0];
 if(file) img = await fileToBase64(file);
 
@@ -306,20 +306,94 @@ level:Number($("levelSelect").value)
 $("itemName").value="";
 $("itemCat").value="";
 $("fileImg").value="";
-$("preview").style.display="none";
 
 save();
 render();
 }
 
+/* ================= IMPORT / EXPORT ================= */
+
+function exportData(){
+const blob = new Blob([JSON.stringify(state)], {type:"application/json"});
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = "garage_backup.json";
+a.click();
+
+URL.revokeObjectURL(url);
+}
+
+function importData(e){
+const file = e.target.files[0];
+if(!file) return;
+
+const r = new FileReader();
+r.onload = ev=>{
+try{
+pushUndo();
+state = JSON.parse(ev.target.result);
+save();
+render();
+}catch{
+alert("Backup non valido");
+}
+};
+r.readAsText(file);
+}
+
+/* ================= PDF EXPORT ================= */
+
+function exportPDF(){
+
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+
+let y = 10;
+
+doc.setFontSize(16);
+doc.text("Garage Pro - Inventario", 10, y);
+
+y += 10;
+
+state.scaffali.forEach((s, si)=>{
+
+doc.setFontSize(12);
+doc.text("Scaffale: " + s.nome, 10, y);
+y += 6;
+
+state.inventario
+.filter(i=>i.shelf==si)
+.forEach(i=>{
+
+if(y > 280){
+doc.addPage();
+y = 10;
+}
+
+doc.setFontSize(10);
+doc.text(`${i.nome} - ${i.categoria||"-"} - Ripiano ${i.level+1}`, 12, y);
+y += 6;
+
+});
+
+y += 6;
+
+});
+
+doc.save("inventario.pdf");
+}
+
 /* ================= MODAL ================= */
 
 function openModal(i){
-$("mTitle").textContent=i.nome;
-$("mCat").textContent=i.categoria||"-";
+
+$("mTitle").textContent = i.nome;
+$("mCat").textContent = i.categoria || "-";
 
 if(i.img){
-$("mImg").src=i.img;
+$("mImg").src = i.img;
 $("mImg").style.display="block";
 }else{
 $("mImg").style.display="none";
@@ -335,7 +409,7 @@ $("modal").style.display="none";
 /* ================= ZOOM ================= */
 
 function zoom(src){
-$("zoomImg").src=src;
+$("zoomImg").src = src;
 $("zoom").style.display="flex";
 }
 
@@ -348,14 +422,13 @@ $("zoom").style.display="none";
 function render(){
 
 let s = $("shelfView");
-s.innerHTML="";
-
-state.scaffali.forEach(sh=>{
-s.innerHTML += `<div><b>${sh.nome}</b></div>`;
+s.innerHTML = "";
+state.scaffali.forEach(x=>{
+s.innerHTML += `<div><b>${x.nome}</b></div>`;
 });
 
 let c = $("items");
-c.innerHTML="";
+c.innerHTML = "";
 
 state.inventario.forEach(i=>{
 
@@ -374,6 +447,7 @@ ${i.img ? `<img src="${i.img}">` : `<div style="width:50px;height:50px;backgroun
 c.appendChild(div);
 });
 
+/* selectors */
 let sel = $("shelfSelect");
 sel.innerHTML="";
 
@@ -399,8 +473,7 @@ l.innerHTML += `<option value="${idx}">${x.nome}</option>`;
 
 $("shelfSelect").onchange = updateLevels;
 
-/* ================= INIT ================= */
-
+/* INIT */
 render();
 
 </script>
