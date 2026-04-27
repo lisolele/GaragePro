@@ -251,7 +251,7 @@ render();
 
 function renameLevel(i,l,val){
 scaffali[i].livelli[l].nome = val;
-save();
+save(); // ✅ FIX CRITICO
 }
 
 /* ===== ITEMS ===== */
@@ -266,8 +266,8 @@ inventario.push({
 id:Date.now(),
 nome,
 categoria:$("categoria").value,
-shelf:Number($("selectShelf").value),
-level:Number($("selectLevel").value)
+shelf:Number($("selectShelf").value||0),
+level:Number($("selectLevel").value||0)
 });
 
 $("nome").value="";
@@ -292,7 +292,7 @@ div.innerHTML=`
 <button onclick="addLevel(${i})">➕ ripiano</button>
 `;
 
-s.livelli.forEach((l,idx)=>{
+(s.livelli||[]).forEach((l,idx)=>{
 div.innerHTML+=`
 <div class="levelRow">
 <input value="${l.nome}"
@@ -352,6 +352,7 @@ s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
 updateLevels();
 }
 
+/* ✅ FIX: safe + sempre aggiornato */
 function updateLevels(){
 
 let i=Number($("selectShelf").value);
@@ -359,7 +360,7 @@ let l=$("selectLevel");
 
 l.innerHTML="";
 
-if(!scaffali[i]) return;
+if(!scaffali[i] || !scaffali[i].livelli) return;
 
 scaffali[i].livelli.forEach((lv,idx)=>{
 l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
