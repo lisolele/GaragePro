@@ -31,21 +31,6 @@ padding:10px 12px;
 
 .title{font-weight:700}
 
-.undoRedo{
-display:flex;
-gap:6px;
-}
-
-.undoRedo button{
-width:30px;
-height:30px;
-border:none;
-border-radius:8px;
-background:#1c1c1e;
-color:#fff;
-font-size:12px;
-}
-
 /* layout */
 .container{padding:12px;max-width:900px;margin:auto}
 
@@ -57,6 +42,7 @@ margin-top:12px;
 box-shadow:0 4px 14px rgba(0,0,0,0.04);
 }
 
+/* input */
 input,select,button{
 width:100%;
 padding:10px;
@@ -73,7 +59,7 @@ border:none;
 font-weight:600;
 }
 
-.danger{background:#ff3b30;color:#fff}
+.danger{background:#ff3b30}
 
 /* scaffali */
 .shelfCard{
@@ -116,6 +102,7 @@ width:48px;
 height:48px;
 background:#eee;
 border-radius:10px;
+object-fit:cover;
 }
 
 .itemInfo{flex:1}
@@ -123,6 +110,48 @@ border-radius:10px;
 .itemTitle{font-weight:600;font-size:13px}
 
 .itemMeta{font-size:11px;opacity:.7;margin-top:3px}
+
+/* ===== POPUP ===== */
+#modal{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.55);
+justify-content:center;
+align-items:center;
+z-index:9999;
+}
+
+.modalBox{
+background:#fff;
+width:92%;
+max-width:420px;
+border-radius:16px;
+padding:14px;
+}
+
+.modalImg{
+width:100%;
+border-radius:12px;
+margin-top:10px;
+cursor:zoom-in;
+}
+
+/* ===== ZOOM ===== */
+#zoom{
+display:none;
+position:fixed;
+inset:0;
+background:black;
+z-index:10000;
+justify-content:center;
+align-items:center;
+}
+
+#zoom img{
+max-width:100%;
+max-height:100%;
+}
 </style>
 </head>
 
@@ -131,41 +160,36 @@ border-radius:10px;
 <header>
 <div class="headerBar">
 <div class="title">🚗 Garage Pro</div>
-
-<div class="undoRedo">
-<button onclick="undo()">↩</button>
-<button onclick="redo()">↪</button>
-<button onclick="exportData()">⬇</button>
-<button onclick="document.getElementById('file').click()">⬆</button>
-</div>
 </div>
 </header>
 
-<input type="file" id="file" style="display:none" onchange="importData(event)">
-
 <div class="container">
 
+<!-- ===== SCAFFALI ===== -->
 <div class="section">
 <h3>Scaffali</h3>
+
 <input id="shelfName" placeholder="Nome scaffale">
 <button onclick="addShelf()">Crea scaffale</button>
+
 <div id="shelfView"></div>
 </div>
 
+<!-- ===== OGGETTI ===== -->
 <div class="section">
 <h3>Oggetti</h3>
 
-<input id="search" placeholder="Cerca..." oninput="renderItems()">
-
 <input id="nome" placeholder="Nome">
 <input id="categoria" placeholder="Categoria">
+<input id="img" placeholder="URL immagine (opzionale)">
 
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
-<button onclick="addItem()">Salva oggetto</button>
+<button onclick="addItem()">Aggiungi oggetto</button>
 </div>
 
+<!-- ===== LISTA ===== -->
 <div class="section">
 <h3>Lista</h3>
 <div id="items"></div>
@@ -173,13 +197,28 @@ border-radius:10px;
 
 </div>
 
+<!-- ===== MODAL ===== -->
+<div id="modal" onclick="closeModal()">
+<div class="modalBox" onclick="event.stopPropagation()">
+
+<h3 id="mTitle"></h3>
+<div id="mCat"></div>
+
+<img id="mImg" class="modalImg" onclick="openZoom(this.src)">
+
+</div>
+</div>
+
+<!-- ===== ZOOM ===== -->
+<div id="zoom" onclick="closeZoom()">
+<img id="zoomImg">
+</div>
+
 <script>
 
 /* ===== STATE ===== */
 let inventario = JSON.parse(localStorage.getItem("inv")) || [];
 let scaffali = JSON.parse(localStorage.getItem("shel")) || [];
-
-let undoStack = [], redoStack = [];
 
 const $ = id => document.getElementById(id);
 
@@ -189,208 +228,94 @@ localStorage.setItem("inv", JSON.stringify(inventario));
 localStorage.setItem("shel", JSON.stringify(scaffali));
 }
 
-/* FIX: snapshot corretto */
-function saveState(){
-undoStack.push(JSON.stringify({ inventario, scaffali }));
-redoStack = [];
-}
-
-/* ===== UNDO REDO ===== */
-function undo(){
-if(!undoStack.length) return;
-redoStack.push(JSON.stringify({ inventario, scaffali }));
-let s = JSON.parse(undoStack.pop());
-inventario = s.inventario;
-scaffali = s.scaffali;
-save();
-render();
-}
-
-function redo(){
-if(!redoStack.length) return;
-undoStack.push(JSON.stringify({ inventario, scaffali }));
-let s = JSON.parse(redoStack.pop());
-inventario = s.inventario;
-scaffali = s.scaffali;
-save();
-render();
-}
-
-/* ===== SCAFFALI (FIX PRINCIPALE) ===== */
+/* ===== SCAFFALI ===== */
 function addShelf(){
-let n = $("shelfName").value.trim();
+
+let n=$("shelfName").value.trim();
 if(!n) return;
 
-saveState();
-
 scaffali.push({
-nome: n,
-livelli: [{ nome: "Ripiano 1" }]
+nome:n,
+livelli:[{nome:"Ripiano 1"}]
 });
 
-$("shelfName").value = "";
+$("shelfName").value="";
 
-/* FIX CRITICO: ordine corretto */
 render();
-updateSelectors();
 }
 
 /* ===== LIVELLI ===== */
-function addLevel(i){
-saveState();
-scaffali[i].livelli.push({
-nome: `Ripiano ${scaffali[i].livelli.length + 1}`
+function updateSelectors(){
+
+let s=$("selectShelf");
+s.innerHTML="";
+
+if(scaffali.length===0){
+scaffali.push({nome:"Default",livelli:[{nome:"Ripiano 1"}]});
+}
+
+scaffali.forEach((sh,i)=>{
+s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
 });
 
-render();
-updateSelectors();
+updateLevels();
 }
 
-function deleteLevel(i,l){
-saveState();
+function updateLevels(){
 
-scaffali[i].livelli.splice(l,1);
+let i=Number($("selectShelf").value);
 
-inventario = inventario.filter(o=>{
-if(o.shelf != i) return true;
-if(o.level == l) return false;
-if(o.level > l) o.level--;
-return true;
+let l=$("selectLevel");
+l.innerHTML="";
+
+if(!scaffali[i]) return;
+
+scaffali[i].livelli.forEach((lv,idx)=>{
+l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
 });
-
-render();
-updateSelectors();
 }
 
-function renameLevel(i,l,val){
-scaffali[i].livelli[l].nome = val;
-save();
-}
+$("selectShelf").onchange=updateLevels;
 
-/* ===== OGGETTI (FIX) ===== */
+/* ===== OGGETTI ===== */
 function addItem(){
 
-let nome = $("nome").value.trim();
+let nome=$("nome").value.trim();
 if(!nome) return;
 
-saveState();
-
 inventario.push({
-id: Date.now(),
+id:Date.now(),
 nome,
-categoria: $("categoria").value,
-shelf: Number($("selectShelf").value),
-level: Number($("selectLevel").value)
+categoria:$("categoria").value,
+img:$("img").value || "",
+shelf:Number($("selectShelf").value),
+level:Number($("selectLevel").value)
 });
 
-$("nome").value = "";
-$("categoria").value = "";
+$("nome").value="";
+$("categoria").value="";
+$("img").value="";
 
-/* FIX IMPORTANTE */
 render();
 }
 
-/* ===== EXPORT ===== */
-function exportData(){
-const data = { inventario, scaffali };
-
-const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
-const url = URL.createObjectURL(blob);
-
-const a = document.createElement("a");
-a.href = url;
-a.download = "garage-backup.json";
-a.click();
-
-URL.revokeObjectURL(url);
-}
-
-/* ===== IMPORT ===== */
-function importData(e){
-const file = e.target.files[0];
-if(!file) return;
-
-const r = new FileReader();
-
-r.onload = () => {
-try{
-let data = JSON.parse(r.result);
-
-if(!data.inventario || !data.scaffali){
-alert("File non valido");
-return;
-}
-
-saveState();
-
-inventario = data.inventario;
-scaffali = data.scaffali;
-
-save();
-render();
-updateSelectors();
-
-alert("Backup importato");
-}
-catch{
-alert("Errore file");
-}
-};
-
-r.readAsText(file);
-}
-
-/* ===== RENDER SCAFFALI ===== */
-function renderShelf(){
-
-let c = $("shelfView");
-c.innerHTML = "";
-
-scaffali.forEach((s,i)=>{
-
-let div = document.createElement("div");
-div.className = "shelfCard";
-
-div.innerHTML = `
-<strong>${s.nome}</strong>
-<button onclick="addLevel(${i})">➕</button>
-`;
-
-(s.livelli || []).forEach((l,idx)=>{
-div.innerHTML += `
-<div class="levelRow">
-<input value="${l.nome}"
-oninput="renameLevel(${i},${idx},this.value)">
-<button class="danger" onclick="deleteLevel(${i},${idx})">×</button>
-</div>
-`;
-});
-
-c.appendChild(div);
-});
-}
-
-/* ===== RENDER ITEMS ===== */
+/* ===== LISTA ===== */
 function renderItems(){
 
-let c = $("items");
-c.innerHTML = "";
-
-let q = $("search").value.toLowerCase();
+let c=$("items");
+c.innerHTML="";
 
 inventario.forEach(i=>{
 
-if(q && !i.nome.toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q))
-return;
+let shelf=scaffali[i.shelf]?.nome||"-";
+let level=scaffali[i.shelf]?.livelli?.[i.level]?.nome||"-";
 
-let shelf = scaffali[i.shelf]?.nome || "-";
-let level = scaffali[i.shelf]?.livelli?.[i.level]?.nome || "-";
+let d=document.createElement("div");
+d.className="itemCard";
+d.onclick=()=>openModal(i);
 
-let d = document.createElement("div");
-d.className = "itemCard";
-
-d.innerHTML = `
-<div class="itemImg"></div>
+d.innerHTML=`
+${i.img?`<img src="${i.img}" class="itemImg">`:`<div class="itemImg"></div>`}
 
 <div class="itemInfo">
 <div class="itemTitle">${i.nome}</div>
@@ -402,38 +327,38 @@ c.appendChild(d);
 });
 }
 
-/* ===== SELECTS (FIX IMPORTANTE) ===== */
-function updateSelectors(){
+/* ===== MODAL ===== */
+function openModal(i){
 
-let s = $("selectShelf");
-s.innerHTML = "";
+$("mTitle").textContent=i.nome;
+$("mCat").textContent=i.categoria||"";
 
-scaffali.forEach((sh,i)=>{
-s.innerHTML += `<option value="${i}">${sh.nome}</option>`;
-});
-
-updateLevels();
+if(i.img){
+$("mImg").src=i.img;
+$("mImg").style.display="block";
+}else{
+$("mImg").style.display="none";
 }
 
-function updateLevels(){
-
-let i = Number($("selectShelf").value);
-let l = $("selectLevel");
-
-l.innerHTML = "";
-
-if(!scaffali[i]) return;
-
-scaffali[i].livelli.forEach((lv,idx)=>{
-l.innerHTML += `<option value="${idx}">${lv.nome}</option>`;
-});
+$("modal").style.display="flex";
 }
 
-$("selectShelf").onchange = updateLevels;
+function closeModal(){
+$("modal").style.display="none";
+}
 
-/* ===== MAIN ===== */
+/* ===== ZOOM ===== */
+function openZoom(src){
+$("zoomImg").src=src;
+$("zoom").style.display="flex";
+}
+
+function closeZoom(){
+$("zoom").style.display="none";
+}
+
+/* ===== RENDER ===== */
 function render(){
-renderShelf();
 renderItems();
 updateSelectors();
 }
