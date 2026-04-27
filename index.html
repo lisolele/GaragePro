@@ -29,7 +29,7 @@ align-items:center;
 padding:10px 12px;
 }
 
-.title{font-weight:700;font-size:15px}
+.title{font-weight:700}
 
 .undoRedo{
 display:flex;
@@ -137,7 +137,6 @@ border-radius:10px;
 <button onclick="redo()">↪</button>
 <button onclick="exportData()">⬇</button>
 <button onclick="document.getElementById('file').click()">⬆</button>
-<button onclick="printReport()">📄</button>
 </div>
 </div>
 </header>
@@ -177,65 +176,74 @@ border-radius:10px;
 <script>
 
 /* ===== STATE ===== */
-let inventario = JSON.parse(localStorage.getItem("inv"))||[];
-let scaffali = JSON.parse(localStorage.getItem("shel"))||[];
+let inventario = JSON.parse(localStorage.getItem("inv")) || [];
+let scaffali = JSON.parse(localStorage.getItem("shel")) || [];
 
-let undoStack=[], redoStack=[];
+let undoStack = [], redoStack = [];
 
-const $=id=>document.getElementById(id);
+const $ = id => document.getElementById(id);
 
+/* ===== SAVE ===== */
 function save(){
-localStorage.setItem("inv",JSON.stringify(inventario));
-localStorage.setItem("shel",JSON.stringify(scaffali));
+localStorage.setItem("inv", JSON.stringify(inventario));
+localStorage.setItem("shel", JSON.stringify(scaffali));
 }
 
-/* FIX: snapshot deep corretto */
+/* FIX: snapshot corretto */
 function saveState(){
-undoStack.push(JSON.stringify({inventario,scaffali}));
-redoStack=[];
+undoStack.push(JSON.stringify({ inventario, scaffali }));
+redoStack = [];
 }
 
 /* ===== UNDO REDO ===== */
 function undo(){
 if(!undoStack.length) return;
-redoStack.push(JSON.stringify({inventario,scaffali}));
-let s=JSON.parse(undoStack.pop());
-inventario=s.inventario;
-scaffali=s.scaffali;
+redoStack.push(JSON.stringify({ inventario, scaffali }));
+let s = JSON.parse(undoStack.pop());
+inventario = s.inventario;
+scaffali = s.scaffali;
 save();
 render();
 }
 
 function redo(){
 if(!redoStack.length) return;
-undoStack.push(JSON.stringify({inventario,scaffali}));
-let s=JSON.parse(redoStack.pop());
-inventario=s.inventario;
-scaffali=s.scaffali;
+undoStack.push(JSON.stringify({ inventario, scaffali }));
+let s = JSON.parse(redoStack.pop());
+inventario = s.inventario;
+scaffali = s.scaffali;
 save();
 render();
 }
 
-/* ===== SCAFFALI FIXATI ===== */
+/* ===== SCAFFALI (FIX PRINCIPALE) ===== */
 function addShelf(){
-let n=$("shelfName").value.trim();
+let n = $("shelfName").value.trim();
 if(!n) return;
 
 saveState();
 
 scaffali.push({
-nome:n,
-livelli:[{nome:"Ripiano 1"}]
+nome: n,
+livelli: [{ nome: "Ripiano 1" }]
 });
 
-$("shelfName").value="";
+$("shelfName").value = "";
+
+/* FIX CRITICO: ordine corretto */
 render();
+updateSelectors();
 }
 
+/* ===== LIVELLI ===== */
 function addLevel(i){
 saveState();
-scaffali[i].livelli.push({nome:`Ripiano ${scaffali[i].livelli.length+1}`});
+scaffali[i].livelli.push({
+nome: `Ripiano ${scaffali[i].livelli.length + 1}`
+});
+
 render();
+updateSelectors();
 }
 
 function deleteLevel(i,l){
@@ -244,13 +252,14 @@ saveState();
 scaffali[i].livelli.splice(l,1);
 
 inventario = inventario.filter(o=>{
-if(o.shelf!=i) return true;
-if(o.level==l) return false;
-if(o.level>l) o.level--;
+if(o.shelf != i) return true;
+if(o.level == l) return false;
+if(o.level > l) o.level--;
 return true;
 });
 
 render();
+updateSelectors();
 }
 
 function renameLevel(i,l,val){
@@ -258,39 +267,39 @@ scaffali[i].livelli[l].nome = val;
 save();
 }
 
-/* ===== ITEMS ===== */
+/* ===== OGGETTI (FIX) ===== */
 function addItem(){
 
-let nome=$("nome").value.trim();
+let nome = $("nome").value.trim();
 if(!nome) return;
 
 saveState();
 
 inventario.push({
-id:Date.now(),
+id: Date.now(),
 nome,
-categoria:$("categoria").value,
-shelf:Number($("selectShelf").value||0),
-level:Number($("selectLevel").value||0)
+categoria: $("categoria").value,
+shelf: Number($("selectShelf").value),
+level: Number($("selectLevel").value)
 });
 
-$("nome").value="";
-$("categoria").value="";
+$("nome").value = "";
+$("categoria").value = "";
 
+/* FIX IMPORTANTE */
 render();
 }
 
 /* ===== EXPORT ===== */
 function exportData(){
+const data = { inventario, scaffali };
 
-const data = {inventario,scaffali};
-
-const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
 const url = URL.createObjectURL(blob);
 
-const a=document.createElement("a");
-a.href=url;
-a.download="garage-backup.json";
+const a = document.createElement("a");
+a.href = url;
+a.download = "garage-backup.json";
 a.click();
 
 URL.revokeObjectURL(url);
@@ -298,14 +307,14 @@ URL.revokeObjectURL(url);
 
 /* ===== IMPORT ===== */
 function importData(e){
-const file=e.target.files[0];
+const file = e.target.files[0];
 if(!file) return;
 
-const r=new FileReader();
+const r = new FileReader();
 
-r.onload=function(){
+r.onload = () => {
 try{
-let data=JSON.parse(r.result);
+let data = JSON.parse(r.result);
 
 if(!data.inventario || !data.scaffali){
 alert("File non valido");
@@ -314,15 +323,16 @@ return;
 
 saveState();
 
-inventario=data.inventario;
-scaffali=data.scaffali;
+inventario = data.inventario;
+scaffali = data.scaffali;
 
 save();
 render();
+updateSelectors();
 
-alert("Backup ripristinato");
+alert("Backup importato");
 }
-catch(err){
+catch{
 alert("Errore file");
 }
 };
@@ -330,24 +340,24 @@ alert("Errore file");
 r.readAsText(file);
 }
 
-/* ===== RENDER SCAFFALI (FIX IMPORTANTE) ===== */
+/* ===== RENDER SCAFFALI ===== */
 function renderShelf(){
 
-let c=$("shelfView");
-c.innerHTML="";
+let c = $("shelfView");
+c.innerHTML = "";
 
 scaffali.forEach((s,i)=>{
 
-let div=document.createElement("div");
-div.className="shelfCard";
+let div = document.createElement("div");
+div.className = "shelfCard";
 
-div.innerHTML=`
+div.innerHTML = `
 <strong>${s.nome}</strong>
 <button onclick="addLevel(${i})">➕</button>
 `;
 
-(s.livelli||[]).forEach((l,idx)=>{
-div.innerHTML+=`
+(s.livelli || []).forEach((l,idx)=>{
+div.innerHTML += `
 <div class="levelRow">
 <input value="${l.nome}"
 oninput="renameLevel(${i},${idx},this.value)">
@@ -363,23 +373,23 @@ c.appendChild(div);
 /* ===== RENDER ITEMS ===== */
 function renderItems(){
 
-let c=$("items");
-c.innerHTML="";
+let c = $("items");
+c.innerHTML = "";
 
-let q=$("search").value.toLowerCase();
+let q = $("search").value.toLowerCase();
 
 inventario.forEach(i=>{
 
 if(q && !i.nome.toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q))
 return;
 
-let shelf=scaffali[i.shelf]?.nome||"-";
-let level=scaffali[i.shelf]?.livelli?.[i.level]?.nome||"Ripiano";
+let shelf = scaffali[i.shelf]?.nome || "-";
+let level = scaffali[i.shelf]?.livelli?.[i.level]?.nome || "-";
 
-let d=document.createElement("div");
-d.className="itemCard";
+let d = document.createElement("div");
+d.className = "itemCard";
 
-d.innerHTML=`
+d.innerHTML = `
 <div class="itemImg"></div>
 
 <div class="itemInfo">
@@ -392,14 +402,14 @@ c.appendChild(d);
 });
 }
 
-/* ===== SELECT FIX ===== */
+/* ===== SELECTS (FIX IMPORTANTE) ===== */
 function updateSelectors(){
 
-let s=$("selectShelf");
-s.innerHTML="";
+let s = $("selectShelf");
+s.innerHTML = "";
 
 scaffali.forEach((sh,i)=>{
-s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
+s.innerHTML += `<option value="${i}">${sh.nome}</option>`;
 });
 
 updateLevels();
@@ -407,66 +417,21 @@ updateLevels();
 
 function updateLevels(){
 
-let i=Number($("selectShelf").value);
-let l=$("selectLevel");
+let i = Number($("selectShelf").value);
+let l = $("selectLevel");
 
-l.innerHTML="";
+l.innerHTML = "";
 
 if(!scaffali[i]) return;
 
 scaffali[i].livelli.forEach((lv,idx)=>{
-l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
+l.innerHTML += `<option value="${idx}">${lv.nome}</option>`;
 });
 }
 
-$("selectShelf").onchange=updateLevels;
+$("selectShelf").onchange = updateLevels;
 
-/* ===== REPORT A4 ===== */
-function printReport(){
-
-const win=window.open("","_blank");
-
-let html=`
-<html>
-<head>
-<style>
-@page{size:A4;margin:18mm}
-body{font-family:Arial}
-h1{font-size:16px}
-.shelf{margin-top:10px;font-weight:bold}
-.item{font-size:12px;border-bottom:1px dotted #ccc;padding:3px 0}
-</style>
-</head>
-<body>
-<h1>📦 Report Garage</h1>
-`;
-
-scaffali.forEach((s,i)=>{
-
-html+=`<div class="shelf">🗄 ${s.nome}</div>`;
-
-(s.livelli||[]).forEach((l,idx)=>{
-
-html+=`<div>▶ ${l.nome}</div>`;
-
-inventario
-.filter(it=>it.shelf===i && it.level===idx)
-.forEach(it=>{
-html+=`<div class="item">${it.nome} (${it.categoria||"-"})</div>`;
-});
-
-});
-
-});
-
-html+=`</body></html>`;
-
-win.document.write(html);
-win.document.close();
-win.onload=()=>win.print();
-}
-
-/* ===== INIT ===== */
+/* ===== MAIN ===== */
 function render(){
 renderShelf();
 renderItems();
