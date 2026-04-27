@@ -39,10 +39,9 @@ background:#fff;
 padding:14px;
 border-radius:14px;
 margin-top:12px;
-box-shadow:0 4px 14px rgba(0,0,0,0.04);
 }
 
-/* input */
+/* inputs */
 input,select,button{
 width:100%;
 padding:10px;
@@ -57,11 +56,12 @@ background:#007aff;
 color:#fff;
 border:none;
 font-weight:600;
+cursor:pointer;
 }
 
 .danger{background:#ff3b30}
 
-/* scaffali */
+/* ===== SCAFFALI ===== */
 .shelfCard{
 margin-top:10px;
 padding:10px;
@@ -69,10 +69,26 @@ border:1px solid #eee;
 border-radius:12px;
 }
 
+.shelfHeader{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:8px;
+}
+
+.shelfHeader input{
+flex:1;
+border:none;
+background:#f5f5f5;
+padding:6px;
+border-radius:8px;
+font-size:13px;
+}
+
 .levelRow{
 display:flex;
-gap:6px;
 align-items:center;
+gap:6px;
 margin-top:6px;
 }
 
@@ -85,7 +101,14 @@ border-radius:8px;
 font-size:12px;
 }
 
-/* items */
+.smallBtn{
+width:auto;
+padding:4px 8px;
+font-size:11px;
+border-radius:8px;
+}
+
+/* ===== ITEMS ===== */
 .itemCard{
 display:flex;
 gap:10px;
@@ -95,6 +118,7 @@ border-radius:12px;
 border:1px solid #eee;
 margin-top:10px;
 background:#fff;
+cursor:pointer;
 }
 
 .itemImg{
@@ -111,7 +135,7 @@ object-fit:cover;
 
 .itemMeta{font-size:11px;opacity:.7;margin-top:3px}
 
-/* ===== POPUP ===== */
+/* ===== MODAL ===== */
 #modal{
 display:none;
 position:fixed;
@@ -124,7 +148,7 @@ z-index:9999;
 
 .modalBox{
 background:#fff;
-width:92%;
+width:90%;
 max-width:420px;
 border-radius:16px;
 padding:14px;
@@ -165,7 +189,7 @@ max-height:100%;
 
 <div class="container">
 
-<!-- ===== SCAFFALI ===== -->
+<!-- SCAFFALI -->
 <div class="section">
 <h3>Scaffali</h3>
 
@@ -175,7 +199,7 @@ max-height:100%;
 <div id="shelfView"></div>
 </div>
 
-<!-- ===== OGGETTI ===== -->
+<!-- OGGETTI -->
 <div class="section">
 <h3>Oggetti</h3>
 
@@ -186,10 +210,10 @@ max-height:100%;
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
-<button onclick="addItem()">Aggiungi oggetto</button>
+<button onclick="addItem()">Aggiungi</button>
 </div>
 
-<!-- ===== LISTA ===== -->
+<!-- LISTA -->
 <div class="section">
 <h3>Lista</h3>
 <div id="items"></div>
@@ -197,19 +221,16 @@ max-height:100%;
 
 </div>
 
-<!-- ===== MODAL ===== -->
+<!-- MODAL -->
 <div id="modal" onclick="closeModal()">
 <div class="modalBox" onclick="event.stopPropagation()">
-
 <h3 id="mTitle"></h3>
 <div id="mCat"></div>
-
 <img id="mImg" class="modalImg" onclick="openZoom(this.src)">
-
 </div>
 </div>
 
-<!-- ===== ZOOM ===== -->
+<!-- ZOOM -->
 <div id="zoom" onclick="closeZoom()">
 <img id="zoomImg">
 </div>
@@ -222,7 +243,7 @@ let scaffali = JSON.parse(localStorage.getItem("shel")) || [];
 
 const $ = id => document.getElementById(id);
 
-/* ===== SAVE ===== */
+/* ===== SAVE (FIX CRITICO) ===== */
 function save(){
 localStorage.setItem("inv", JSON.stringify(inventario));
 localStorage.setItem("shel", JSON.stringify(scaffali));
@@ -241,41 +262,37 @@ livelli:[{nome:"Ripiano 1"}]
 
 $("shelfName").value="";
 
+save();
 render();
 }
 
 /* ===== LIVELLI ===== */
-function updateSelectors(){
-
-let s=$("selectShelf");
-s.innerHTML="";
-
-if(scaffali.length===0){
-scaffali.push({nome:"Default",livelli:[{nome:"Ripiano 1"}]});
+function addLevel(i){
+scaffali[i].livelli.push({nome:`Ripiano ${scaffali[i].livelli.length+1}`});
+save();
+render();
 }
 
-scaffali.forEach((sh,i)=>{
-s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
+function deleteLevel(i,l){
+
+scaffali[i].livelli.splice(l,1);
+
+/* riallinea oggetti */
+inventario = inventario.filter(o=>{
+if(o.shelf!=i) return true;
+if(o.level==l) return false;
+if(o.level>l) o.level--;
+return true;
 });
 
-updateLevels();
+save();
+render();
 }
 
-function updateLevels(){
-
-let i=Number($("selectShelf").value);
-
-let l=$("selectLevel");
-l.innerHTML="";
-
-if(!scaffali[i]) return;
-
-scaffali[i].livelli.forEach((lv,idx)=>{
-l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
-});
+function renameLevel(i,l,val){
+scaffali[i].livelli[l].nome = val;
+save();
 }
-
-$("selectShelf").onchange=updateLevels;
 
 /* ===== OGGETTI ===== */
 function addItem(){
@@ -287,7 +304,7 @@ inventario.push({
 id:Date.now(),
 nome,
 categoria:$("categoria").value,
-img:$("img").value || "",
+img:$("img").value||"",
 shelf:Number($("selectShelf").value),
 level:Number($("selectLevel").value)
 });
@@ -296,10 +313,77 @@ $("nome").value="";
 $("categoria").value="";
 $("img").value="";
 
+save();
 render();
 }
 
-/* ===== LISTA ===== */
+/* ===== POPUP (FIX) ===== */
+function openModal(i){
+
+$("mTitle").textContent=i.nome;
+$("mCat").textContent=i.categoria||"-";
+
+if(i.img){
+$("mImg").src=i.img;
+$("mImg").style.display="block";
+}else{
+$("mImg").style.display="none";
+}
+
+$("modal").style.display="flex";
+}
+
+function closeModal(){
+$("modal").style.display="none";
+}
+
+/* ===== ZOOM ===== */
+function openZoom(src){
+$("zoomImg").src=src;
+$("zoom").style.display="flex";
+}
+
+function closeZoom(){
+$("zoom").style.display="none";
+}
+
+/* ===== RENDER SCAFFALI (FIX UI RIPIANI) ===== */
+function renderShelf(){
+
+let c=$("shelfView");
+c.innerHTML="";
+
+scaffali.forEach((s,i)=>{
+
+let div=document.createElement("div");
+div.className="shelfCard";
+
+div.innerHTML=`
+<div class="shelfHeader">
+<input value="${s.nome}"
+oninput="scaffali[${i}].nome=this.value; save();">
+<button onclick="addLevel(${i})" class="smallBtn">+ ripiano</button>
+</div>
+`;
+
+s.livelli.forEach((l,idx)=>{
+
+div.innerHTML+=`
+<div class="levelRow">
+<input value="${l.nome}"
+oninput="renameLevel(${i},${idx},this.value)">
+
+<button class="danger smallBtn"
+onclick="deleteLevel(${i},${idx})">×</button>
+</div>
+`;
+});
+
+c.appendChild(div);
+});
+}
+
+/* ===== ITEMS ===== */
 function renderItems(){
 
 let c=$("items");
@@ -327,38 +411,38 @@ c.appendChild(d);
 });
 }
 
-/* ===== MODAL ===== */
-function openModal(i){
+/* ===== SELECT ===== */
+function updateSelectors(){
 
-$("mTitle").textContent=i.nome;
-$("mCat").textContent=i.categoria||"";
+let s=$("selectShelf");
+s.innerHTML="";
 
-if(i.img){
-$("mImg").src=i.img;
-$("mImg").style.display="block";
-}else{
-$("mImg").style.display="none";
+scaffali.forEach((sh,i)=>{
+s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
+});
+
+updateLevels();
 }
 
-$("modal").style.display="flex";
+function updateLevels(){
+
+let i=Number($("selectShelf").value);
+
+let l=$("selectLevel");
+l.innerHTML="";
+
+if(!scaffali[i]) return;
+
+scaffali[i].livelli.forEach((lv,idx)=>{
+l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
+});
 }
 
-function closeModal(){
-$("modal").style.display="none";
-}
+$("selectShelf").onchange=updateLevels;
 
-/* ===== ZOOM ===== */
-function openZoom(src){
-$("zoomImg").src=src;
-$("zoom").style.display="flex";
-}
-
-function closeZoom(){
-$("zoom").style.display="none";
-}
-
-/* ===== RENDER ===== */
+/* ===== MAIN ===== */
 function render(){
+renderShelf();
 renderItems();
 updateSelectors();
 }
