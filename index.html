@@ -12,10 +12,8 @@ body{
 margin:0;
 font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 background:#f2f2f7;
-color:#111;
 }
 
-/* HEADER */
 header{
 position:sticky;
 top:0;
@@ -31,12 +29,8 @@ align-items:center;
 padding:10px 12px;
 }
 
-.title{
-font-weight:700;
-font-size:15px;
-}
+.title{font-weight:700;font-size:15px}
 
-/* UNDO REDO SMALL */
 .undoRedo{
 display:flex;
 gap:6px;
@@ -45,18 +39,17 @@ gap:6px;
 .undoRedo button{
 width:28px;
 height:28px;
-padding:0;
+border:none;
 border-radius:8px;
-font-size:12px;
 background:#1c1c1e;
 color:#fff;
-border:none;
+font-size:12px;
 display:flex;
 align-items:center;
 justify-content:center;
 }
 
-/* LAYOUT */
+/* layout */
 .container{
 padding:12px;
 max-width:900px;
@@ -71,13 +64,9 @@ margin-top:12px;
 box-shadow:0 4px 14px rgba(0,0,0,0.04);
 }
 
-h3{
-margin:0 0 10px 0;
-font-size:14px;
-}
+h3{margin:0 0 10px 0;font-size:14px}
 
-/* INPUTS */
-input,select{
+input,select,button{
 width:100%;
 padding:10px;
 margin-top:6px;
@@ -87,15 +76,10 @@ font-size:13px;
 }
 
 button{
-width:100%;
-padding:10px;
-margin-top:8px;
-border-radius:10px;
-border:none;
 background:#007aff;
 color:#fff;
+border:none;
 font-weight:600;
-font-size:13px;
 }
 
 /* SCAFFALI */
@@ -104,21 +88,8 @@ margin-top:10px;
 padding:10px;
 border:1px solid #eee;
 border-radius:12px;
-background:#fff;
 }
 
-.shelfHeader{
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:8px;
-}
-
-.shelfHeader strong{
-font-size:13px;
-}
-
-/* LEVEL ROW */
 .levelRow{
 display:flex;
 gap:6px;
@@ -135,17 +106,15 @@ border-radius:8px;
 font-size:12px;
 }
 
-/* SMALL BUTTONS */
 .smallBtn{
 width:26px;
 height:26px;
-padding:0;
+border:none;
 border-radius:8px;
 font-size:11px;
 display:flex;
 align-items:center;
 justify-content:center;
-border:none;
 cursor:pointer;
 }
 
@@ -173,24 +142,12 @@ border-radius:10px;
 
 .itemInfo{flex:1}
 
-.itemTitle{
-font-weight:600;
-font-size:13px;
-}
+.itemTitle{font-weight:600;font-size:13px}
 
 .itemMeta{
 font-size:11px;
 opacity:.7;
 margin-top:3px;
-}
-
-/* BADGE */
-.categoryBadge{
-padding:2px 6px;
-border-radius:6px;
-font-size:10px;
-color:#fff;
-font-weight:600;
 }
 </style>
 </head>
@@ -204,6 +161,7 @@ font-weight:600;
 <div class="undoRedo">
 <button onclick="undo()">↩</button>
 <button onclick="redo()">↪</button>
+<button onclick="printReport()">📄</button>
 </div>
 </div>
 </header>
@@ -213,7 +171,7 @@ font-weight:600;
 <div class="section">
 <h3>Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<button onclick="addShelf()">Crea scaffale</button>
+<button onclick="addShelf()">Crea</button>
 <div id="shelfView"></div>
 </div>
 
@@ -228,7 +186,7 @@ font-weight:600;
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
-<button onclick="addItem()">Salva oggetto</button>
+<button onclick="addItem()">Salva</button>
 </div>
 
 <div class="section">
@@ -355,10 +313,8 @@ let div=document.createElement("div");
 div.className="shelfCard";
 
 div.innerHTML=`
-<div class="shelfHeader">
 <strong>${s.nome}</strong>
 <button class="smallBtn blue" onclick="addLevel(${i})">+</button>
-</div>
 `;
 
 (s.livelli||[]).forEach((l,idx)=>{
@@ -398,10 +354,7 @@ d.innerHTML=`
 
 <div class="itemInfo">
 <div class="itemTitle">${i.nome}</div>
-<div class="itemMeta">
-<span class="categoryBadge" style="background:#999">${i.categoria||"-"}</span>
-• ${shelf} • ${level}
-</div>
+<div class="itemMeta">${i.categoria||"-"} • ${shelf} • ${level}</div>
 </div>
 `;
 
@@ -437,7 +390,86 @@ l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
 
 $("selectShelf").onchange=updateLevels;
 
-/* ===== MAIN ===== */
+/* ===== REPORT A4 PRINT ===== */
+function printReport(){
+
+const win = window.open("", "_blank");
+
+let html = `
+<html>
+<head>
+<title>Report Garage</title>
+
+<style>
+@page { size: A4; margin: 18mm; }
+
+body{
+font-family: Arial;
+color:#111;
+}
+
+h1{font-size:18px;margin-bottom:10px}
+
+.shelf{
+margin-top:12px;
+font-weight:bold;
+border-bottom:1px solid #000;
+padding-bottom:4px;
+}
+
+.item{
+display:flex;
+justify-content:space-between;
+font-size:12px;
+padding:4px 0;
+border-bottom:1px dotted #ccc;
+}
+
+.small{font-size:11px;opacity:.7}
+</style>
+</head>
+
+<body>
+
+<h1>📦 Report Inventario Garage</h1>
+<div class="small">Generato: ${new Date().toLocaleString()}</div>
+`;
+
+scaffali.forEach((s,i)=>{
+
+html += `<div class="shelf">🗄 ${s.nome}</div>`;
+
+(s.livelli||[]).forEach((l,idx)=>{
+
+html += `<div class="small">▶ ${l.nome}</div>`;
+
+inventario
+.filter(it=>it.shelf===i && it.level===idx)
+.forEach(it=>{
+html += `
+<div class="item">
+<b>${it.nome}</b>
+<span class="small">${it.categoria||"-"}</span>
+</div>
+`;
+});
+
+});
+
+});
+
+html += `
+</body>
+</html>
+`;
+
+win.document.write(html);
+win.document.close();
+
+win.onload = () => win.print();
+}
+
+/* ===== INIT ===== */
 function render(){
 renderShelf();
 renderItems();
