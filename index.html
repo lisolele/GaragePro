@@ -3,453 +3,244 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garage Pro FIX</title>
+<title>Garage Modular</title>
 
 <style>
-*{box-sizing:border-box}
-
-body{
-margin:0;
-font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-background:#f2f2f7;
-}
+body{margin:0;font-family:sans-serif;background:#f4f4f7}
 
 header{
-position:sticky;
-top:0;
-background:#fff;
-display:flex;
-justify-content:space-between;
-padding:10px;
+position:sticky;top:0;background:#fff;
+padding:10px;display:flex;justify-content:space-between;
 border-bottom:1px solid #eee;
-font-weight:700;
-z-index:10;
-}
-
-.actions button{
-width:auto;
-padding:4px 8px;
-font-size:12px;
-border-radius:8px;
-background:#1c1c1e;
-color:#fff;
-border:none;
 }
 
 .container{padding:12px;max-width:900px;margin:auto}
 
-.section{
-background:#fff;
-padding:14px;
-border-radius:14px;
-margin-top:12px;
-}
+.section{background:#fff;padding:12px;border-radius:12px;margin-top:12px}
 
-input,select,button{
-width:100%;
-padding:10px;
-margin-top:6px;
-border-radius:10px;
-border:1px solid #ddd;
-}
+/* generic UI */
+button{padding:8px;border-radius:8px;border:none;background:#007aff;color:#fff}
+input,select{width:100%;padding:8px;margin-top:6px}
 
-button{
-background:#007aff;
-color:#fff;
-border:none;
-font-weight:600;
-}
+/* items */
+.item{padding:10px;border:1px solid #eee;border-radius:10px;margin-top:8px;cursor:pointer}
 
-.shelf{
-border:1px solid #eee;
-border-radius:12px;
-padding:10px;
-margin-top:10px;
-background:#fafafa;
-}
+/* modal */
+#modal{display:none;position:fixed;inset:0;background:#0008;justify-content:center;align-items:center}
+#modalBox{background:#fff;padding:12px;border-radius:12px;width:90%;max-width:400px}
 
-.levelRow{
-display:flex;
-gap:6px;
-align-items:center;
-margin-top:6px;
-}
-
-.levelRow input{
-flex:1;
-padding:6px;
-border:none;
-border-radius:8px;
-background:#fff;
-font-size:12px;
-}
-
-.smallBtn{
-width:auto;
-padding:4px 6px;
-font-size:11px;
-}
-
-.item{
-display:flex;
-gap:10px;
-padding:10px;
-border:1px solid #eee;
-border-radius:12px;
-margin-top:10px;
-background:#fff;
-cursor:pointer;
-}
-
-.item img{
-width:50px;
-height:50px;
-border-radius:10px;
-object-fit:cover;
-background:#eee;
-}
-
-/* MODAL */
-#modal{
-display:none;
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.6);
-justify-content:center;
-align-items:center;
-z-index:20;
-}
-
-.box{
-background:#fff;
-padding:14px;
-border-radius:14px;
-width:90%;
-max-width:420px;
-}
-
-.box img{
-width:100%;
-border-radius:10px;
-cursor:zoom-in;
-}
-
-/* ZOOM */
-#zoom{
-display:none;
-position:fixed;
-inset:0;
-background:#000;
-justify-content:center;
-align-items:center;
-z-index:30;
-}
-
-#zoom img{
-max-width:100%;
-max-height:100%;
-}
-
+#zoom{display:none;position:fixed;inset:0;background:#000;justify-content:center;align-items:center}
+#zoom img{max-width:100%;max-height:100%}
 </style>
 </head>
 
 <body>
 
 <header>
-<div>🚗 Garage Pro FIX</div>
-<div class="actions">
-<button onclick="undo()">↩</button>
-<button onclick="redo()">↪</button>
+<div>🚗 Garage Modular</div>
+<div>
+<button onclick="UndoRedo.undo()">↩</button>
+<button onclick="UndoRedo.redo()">↪</button>
+<button onclick="ImportExport.export()">⬇</button>
+<button onclick="ImportExport.import()">⬆</button>
 </div>
 </header>
 
 <div class="container">
 
 <div class="section">
-<h3>Scaffali</h3>
-<input id="shelfName" placeholder="Nome scaffale">
-<button onclick="addShelf()">Crea</button>
-<div id="shelfView"></div>
-</div>
-
-<div class="section">
 <h3>Oggetti</h3>
 
 <input id="itemName" placeholder="Nome">
-<input id="itemCat" placeholder="Categoria">
+<input type="file" id="itemImg">
 
-<select id="shelfSelect"></select>
-<select id="levelSelect"></select>
+<button onclick="Items.add()">Aggiungi</button>
 
-<button onclick="addItem()">Aggiungi</button>
-</div>
-
-<div class="section">
-<h3>Inventario</h3>
 <div id="items"></div>
 </div>
 
 </div>
 
 <!-- MODAL -->
-<div id="modal" onclick="closeModal()">
-<div class="box" onclick="event.stopPropagation()">
-<h3 id="mName"></h3>
-<div id="mCat"></div>
-<img id="mImg" onclick="zoom(this.src)">
-</div>
+<div id="modal" onclick="Modal.close()">
+<div id="modalBox" onclick="event.stopPropagation()"></div>
 </div>
 
 <!-- ZOOM -->
-<div id="zoom" onclick="closeZoom()">
+<div id="zoom" onclick="Media.closeZoom()">
 <img id="zoomImg">
 </div>
 
 <script>
 
-/* ================= STATE ================= */
+/* ================= CORE STATE ================= */
 
-let state = {
-scaffali: [],
-inventario: []
+const State = {
+data:{
+items:[],
+shelves:[]
+},
+set(fn){
+fn(this.data);
+Storage.save();
+Render.all();
+}
 };
 
-let undoStack=[], redoStack=[];
+/* ================= STORAGE ================= */
 
-const $ = id => document.getElementById(id);
-
-/* ================= SAVE ================= */
-
-function save(){
-localStorage.setItem("garage", JSON.stringify(state));
+const Storage = {
+key:"garage_mod",
+save(){
+localStorage.setItem(this.key,JSON.stringify(State.data));
+},
+load(){
+const d=localStorage.getItem(this.key);
+if(d) State.data=JSON.parse(d);
 }
+};
 
-function snap(){ return JSON.stringify(state); }
-function restore(s){ state = JSON.parse(s); }
+/* ================= RENDER ENGINE ================= */
 
-function pushUndo(){
-undoStack.push(snap());
-redoStack=[];
-}
-
-/* ================= UNDO ================= */
-
-function undo(){
-if(!undoStack.length) return;
-redoStack.push(snap());
-restore(undoStack.pop());
-save(); render();
-}
-
-function redo(){
-if(!redoStack.length) return;
-undoStack.push(snap());
-restore(redoStack.pop());
-save(); render();
-}
-
-/* ================= SCAFFALI ================= */
-
-function addShelf(){
-const n=$("shelfName").value.trim();
-if(!n) return;
-
-pushUndo();
-
-state.scaffali.push({
-nome:n,
-livelli:[{nome:"Ripiano 1"}]
-});
-
-$("shelfName").value="";
-save(); render();
-}
-
-function renameShelf(i,v){
-state.scaffali[i].nome=v;
-save();
-}
-
-function deleteShelf(i){
-pushUndo();
-state.scaffali.splice(i,1);
-state.inventario=state.inventario.filter(x=>x.shelf!==i);
-save(); render();
-}
-
-/* ================= LEVELS ================= */
-
-function addLevel(i){
-pushUndo();
-state.scaffali[i].livelli.push({nome:`Ripiano ${state.scaffali[i].livelli.length+1}`});
-save(); render();
-}
-
-function renameLevel(i,l,v){
-state.scaffali[i].livelli[l].nome=v;
-save();
-}
-
-function deleteLevel(i,l){
-pushUndo();
-
-state.scaffali[i].livelli.splice(l,1);
-
-state.inventario=state.inventario.filter(o=>{
-if(o.shelf!==i) return true;
-if(o.level===l) return false;
-if(o.level>l) o.level--;
-return true;
-});
-
-save(); render();
-}
-
-/* ================= ITEMS ================= */
-
-function addItem(){
-const n=$("itemName").value.trim();
-if(!n) return;
-
-pushUndo();
-
-state.inventario.push({
-id:Date.now(),
-nome:n,
-categoria:$("itemCat").value,
-shelf:Number($("shelfSelect").value),
-level:Number($("levelSelect").value),
-img:null
-});
-
-$("itemName").value="";
-$("itemCat").value="";
-
-save(); render();
-}
-
-/* ================= POPUP ================= */
-
-function openModal(i){
-$("mName").innerText=i.nome;
-$("mCat").innerText=i.categoria||"-";
-
-$("mImg").src=i.img||"https://via.placeholder.com/300";
-
-$("modal").style.display="flex";
-}
-
-function closeModal(){
-$("modal").style.display="none";
-}
-
-/* ================= ZOOM ================= */
-
-function zoom(src){
-$("zoomImg").src=src;
-$("zoom").style.display="flex";
-}
-
-function closeZoom(){
-$("zoom").style.display="none";
-}
-
-/* ================= RENDER SCAFFALI ================= */
-
-function renderShelves(){
-const c=$("shelfView");
+const Render = {
+items(){
+const c=document.getElementById("items");
 c.innerHTML="";
-
-state.scaffali.forEach((s,i)=>{
-
-const d=document.createElement("div");
-d.className="shelf";
-
-d.innerHTML=`
-<input value="${s.nome}" oninput="renameShelf(${i},this.value)">
-<button onclick="addLevel(${i})">+ livello</button>
-<button onclick="deleteShelf(${i})">del scaffale</button>
-`;
-
-s.livelli.forEach((l,li)=>{
-d.innerHTML+=`
-<div class="levelRow">
-<input value="${l.nome}" oninput="renameLevel(${i},${li},this.value)">
-<button class="smallBtn" onclick="deleteLevel(${i},${li})">🗑</button>
-</div>
-`;
-});
-
-c.appendChild(d);
-});
-}
-
-/* ================= RENDER ITEMS (FIX POPUP QUI) ================= */
-
-function renderItems(){
-const c=$("items");
-c.innerHTML="";
-
-state.inventario.forEach(i=>{
-
+State.data.items.forEach(i=>{
 const d=document.createElement("div");
 d.className="item";
-
-/* 🔴 FIX IMPORTANTE: onclick su container */
-d.onclick=()=>openModal(i);
-
-d.innerHTML=`
-<div style="width:50px;height:50px;background:#eee;border-radius:10px"></div>
-
-<div>
-<b>${i.nome}</b><br>
-<small>${i.categoria||"-"}</small>
-</div>
-`;
-
+d.innerHTML=`<b>${i.name}</b>`;
+d.onclick=()=>Modal.open(i);
 c.appendChild(d);
 });
+},
+all(){
+this.items();
 }
+};
 
-/* ================= SELECT ================= */
+/* ================= ITEMS MODULE ================= */
 
-function updateSelectors(){
+const Items = {
+async add(){
 
-const s=$("shelfSelect");
-s.innerHTML="";
+const name=document.getElementById("itemName").value;
+const file=document.getElementById("itemImg").files[0];
 
-state.scaffali.forEach((x,i)=>{
-s.innerHTML+=`<option value="${i}">${x.nome}</option>`;
+let img=null;
+if(file) img=await Media.toBase64(file);
+
+State.set(s=>{
+s.items.push({
+id:Date.now(),
+name,
+img
 });
-
-updateLevels();
-}
-
-function updateLevels(){
-const i=Number($("shelfSelect").value);
-const l=$("levelSelect");
-
-l.innerHTML="";
-if(!state.scaffali[i]) return;
-
-state.scaffali[i].livelli.forEach((x,idx)=>{
-l.innerHTML+=`<option value="${idx}">${x.nome}</option>`;
 });
 }
+};
 
-$("shelfSelect").onchange=updateLevels;
+/* ================= MEDIA MODULE ================= */
 
-/* ================= MAIN ================= */
-
-function render(){
-renderShelves();
-renderItems();
-updateSelectors();
+const Media = {
+toBase64(file){
+return new Promise(r=>{
+const fr=new FileReader();
+fr.onload=()=>r(fr.result);
+fr.readAsDataURL(file);
+});
+},
+zoom(src){
+document.getElementById("zoomImg").src=src;
+document.getElementById("zoom").style.display="flex";
+},
+closeZoom(){
+document.getElementById("zoom").style.display="none";
 }
+};
+
+/* ================= MODAL ================= */
+
+const Modal = {
+open(item){
+const box=document.getElementById("modalBox");
+box.innerHTML=`
+<h3>${item.name}</h3>
+${item.img?`<img src="${item.img}" style="width:100%" onclick="Media.zoom(this.src)">`:``}
+`;
+document.getElementById("modal").style.display="flex";
+},
+close(){
+document.getElementById("modal").style.display="none";
+}
+};
+
+/* ================= UNDO REDO ================= */
+
+const UndoRedo = {
+stack:[],
+redo:[],
+snap(){
+return JSON.stringify(State.data);
+},
+undo(){
+if(!this.stack.length) return;
+this.redo.push(this.snap());
+State.data=JSON.parse(this.stack.pop());
+Storage.save();
+Render.all();
+},
+redo(){
+if(!this.redo.length) return;
+this.stack.push(this.snap());
+State.data=JSON.parse(this.redo.pop());
+Storage.save();
+Render.all();
+},
+push(){
+this.stack.push(this.snap());
+this.redo=[];
+}
+};
+
+/* wrap State.set */
+const _set=State.set.bind(State);
+State.set=function(fn){
+UndoRedo.push();
+_set(fn);
+};
+
+/* ================= IMPORT EXPORT ================= */
+
+const ImportExport={
+export(){
+const blob=new Blob([JSON.stringify(State.data)],{type:"application/json"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="backup.json";
+a.click();
+},
+import(){
+const inp=document.createElement("input");
+inp.type="file";
+inp.onchange=e=>{
+const f=e.target.files[0];
+const r=new FileReader();
+r.onload=ev=>{
+State.set(s=>{
+State.data=JSON.parse(ev.target.result);
+});
+};
+r.readAsText(f);
+};
+inp.click();
+}
+};
 
 /* ================= INIT ================= */
 
-render();
+Storage.load();
+Render.all();
 
 </script>
 
