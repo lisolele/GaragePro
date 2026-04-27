@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garage Pro</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<title>Garage Pro FIX</title>
 
 <style>
 *{box-sizing:border-box}
@@ -16,23 +14,16 @@ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 background:#f2f2f7;
 }
 
-/* HEADER */
 header{
 position:sticky;
 top:0;
 background:#fff;
 display:flex;
 justify-content:space-between;
-align-items:center;
-padding:10px 12px;
+padding:10px;
 border-bottom:1px solid #eee;
 font-weight:700;
 z-index:10;
-}
-
-.actions{
-display:flex;
-gap:6px;
 }
 
 .actions button{
@@ -43,11 +34,9 @@ border-radius:8px;
 background:#1c1c1e;
 color:#fff;
 border:none;
-cursor:pointer;
 }
 
-/* LAYOUT */
-.container{padding:12px;max-width:1000px;margin:auto}
+.container{padding:12px;max-width:900px;margin:auto}
 
 .section{
 background:#fff;
@@ -56,7 +45,6 @@ border-radius:14px;
 margin-top:12px;
 }
 
-/* INPUT */
 input,select,button{
 width:100%;
 padding:10px;
@@ -72,7 +60,6 @@ border:none;
 font-weight:600;
 }
 
-/* SCAFFALI */
 .shelf{
 border:1px solid #eee;
 border-radius:12px;
@@ -81,14 +68,14 @@ margin-top:10px;
 background:#fafafa;
 }
 
-.level{
+.levelRow{
 display:flex;
 gap:6px;
-margin-top:6px;
 align-items:center;
+margin-top:6px;
 }
 
-.level input{
+.levelRow input{
 flex:1;
 padding:6px;
 border:none;
@@ -103,7 +90,6 @@ padding:4px 6px;
 font-size:11px;
 }
 
-/* ITEMS */
 .item{
 display:flex;
 gap:10px;
@@ -142,6 +128,12 @@ width:90%;
 max-width:420px;
 }
 
+.box img{
+width:100%;
+border-radius:10px;
+cursor:zoom-in;
+}
+
 /* ZOOM */
 #zoom{
 display:none;
@@ -157,21 +149,17 @@ z-index:30;
 max-width:100%;
 max-height:100%;
 }
+
 </style>
 </head>
 
 <body>
 
 <header>
-<div>🚗 Garage Pro</div>
-
+<div>🚗 Garage Pro FIX</div>
 <div class="actions">
 <button onclick="undo()">↩</button>
 <button onclick="redo()">↪</button>
-<button onclick="exportPDF()">📄</button>
-<button onclick="exportBackup()">⬇</button>
-<button onclick="document.getElementById('importFile').click()">⬆</button>
-<input type="file" id="importFile" hidden onchange="importBackup(event)">
 </div>
 </header>
 
@@ -189,8 +177,6 @@ max-height:100%;
 
 <input id="itemName" placeholder="Nome">
 <input id="itemCat" placeholder="Categoria">
-
-<input type="file" id="imgFile">
 
 <select id="shelfSelect"></select>
 <select id="levelSelect"></select>
@@ -221,15 +207,14 @@ max-height:100%;
 
 <script>
 
-/* ================= STATE UNICO ================= */
+/* ================= STATE ================= */
 
 let state = {
-scaffali: JSON.parse(localStorage.getItem("garage"))?.scaffali || [],
-inventario: JSON.parse(localStorage.getItem("garage"))?.inventario || []
+scaffali: [],
+inventario: []
 };
 
-let undoStack = [];
-let redoStack = [];
+let undoStack=[], redoStack=[];
 
 const $ = id => document.getElementById(id);
 
@@ -239,17 +224,15 @@ function save(){
 localStorage.setItem("garage", JSON.stringify(state));
 }
 
-/* ================= SNAPSHOT ================= */
-
 function snap(){ return JSON.stringify(state); }
 function restore(s){ state = JSON.parse(s); }
 
 function pushUndo(){
 undoStack.push(snap());
-redoStack = [];
+redoStack=[];
 }
 
-/* ================= UNDO REDO ================= */
+/* ================= UNDO ================= */
 
 function undo(){
 if(!undoStack.length) return;
@@ -265,20 +248,10 @@ restore(redoStack.pop());
 save(); render();
 }
 
-/* ================= IMAGE ================= */
-
-function toBase64(file){
-return new Promise(r=>{
-const fr = new FileReader();
-fr.onload = ()=>r(fr.result);
-fr.readAsDataURL(file);
-});
-}
-
 /* ================= SCAFFALI ================= */
 
 function addShelf(){
-const n = $("shelfName").value.trim();
+const n=$("shelfName").value.trim();
 if(!n) return;
 
 pushUndo();
@@ -293,16 +266,14 @@ save(); render();
 }
 
 function renameShelf(i,v){
-state.scaffali[i].nome = v;
+state.scaffali[i].nome=v;
 save();
 }
 
 function deleteShelf(i){
 pushUndo();
-
 state.scaffali.splice(i,1);
-state.inventario = state.inventario.filter(x=>x.shelf!==i);
-
+state.inventario=state.inventario.filter(x=>x.shelf!==i);
 save(); render();
 }
 
@@ -315,7 +286,7 @@ save(); render();
 }
 
 function renameLevel(i,l,v){
-state.scaffali[i].livelli[l].nome = v;
+state.scaffali[i].livelli[l].nome=v;
 save();
 }
 
@@ -324,7 +295,7 @@ pushUndo();
 
 state.scaffali[i].livelli.splice(l,1);
 
-state.inventario = state.inventario.filter(o=>{
+state.inventario=state.inventario.filter(o=>{
 if(o.shelf!==i) return true;
 if(o.level===l) return false;
 if(o.level>l) o.level--;
@@ -336,102 +307,62 @@ save(); render();
 
 /* ================= ITEMS ================= */
 
-async function addItem(){
-
-const n = $("itemName").value.trim();
+function addItem(){
+const n=$("itemName").value.trim();
 if(!n) return;
 
 pushUndo();
-
-let img = null;
-const f = $("imgFile").files[0];
-if(f) img = await toBase64(f);
 
 state.inventario.push({
 id:Date.now(),
 nome:n,
 categoria:$("itemCat").value,
-img,
 shelf:Number($("shelfSelect").value),
-level:Number($("levelSelect").value)
+level:Number($("levelSelect").value),
+img:null
 });
 
 $("itemName").value="";
 $("itemCat").value="";
-$("imgFile").value="";
 
 save(); render();
 }
 
-/* ================= EXPORT BACKUP ================= */
+/* ================= POPUP ================= */
 
-function exportBackup(){
-const blob = new Blob([JSON.stringify(state)], {type:"application/json"});
-const url = URL.createObjectURL(blob);
+function openModal(i){
+$("mName").innerText=i.nome;
+$("mCat").innerText=i.categoria||"-";
 
-const a = document.createElement("a");
-a.href = url;
-a.download = "garage_backup.json";
-a.click();
+$("mImg").src=i.img||"https://via.placeholder.com/300";
 
-URL.revokeObjectURL(url);
+$("modal").style.display="flex";
 }
 
-/* ================= IMPORT BACKUP ================= */
-
-function importBackup(e){
-const f = e.target.files[0];
-if(!f) return;
-
-const r = new FileReader();
-r.onload = ev=>{
-pushUndo();
-state = JSON.parse(ev.target.result);
-save(); render();
-};
-r.readAsText(f);
+function closeModal(){
+$("modal").style.display="none";
 }
 
-/* ================= PDF ================= */
+/* ================= ZOOM ================= */
 
-function exportPDF(){
+function zoom(src){
+$("zoomImg").src=src;
+$("zoom").style.display="flex";
+}
 
-const { jsPDF } = window.jspdf;
-const doc = new jsPDF();
+function closeZoom(){
+$("zoom").style.display="none";
+}
 
-let y = 10;
+/* ================= RENDER SCAFFALI ================= */
 
-doc.text("Garage Pro Inventario", 10, y);
-y+=10;
+function renderShelves(){
+const c=$("shelfView");
+c.innerHTML="";
 
 state.scaffali.forEach((s,i)=>{
 
-doc.text("Scaffale: "+s.nome,10,y);
-y+=6;
-
-state.inventario.filter(o=>o.shelf===i).forEach(o=>{
-if(y>280){doc.addPage();y=10;}
-doc.text(`${o.nome} - ${o.categoria||"-"} - R${o.level+1}`,10,y);
-y+=6;
-});
-
-y+=6;
-
-});
-
-doc.save("inventario.pdf");
-}
-
-/* ================= RENDER ================= */
-
-function render(){
-
-const sv = $("shelfView");
-sv.innerHTML="";
-
-state.scaffali.forEach((s,i)=>{
-
-const d = document.createElement("div");
+const d=document.createElement("div");
 d.className="shelf";
 
 d.innerHTML=`
@@ -440,35 +371,51 @@ d.innerHTML=`
 <button onclick="deleteShelf(${i})">del scaffale</button>
 `;
 
-(s.livelli||[]).forEach((l,li)=>{
+s.livelli.forEach((l,li)=>{
 d.innerHTML+=`
-<div class="level">
+<div class="levelRow">
 <input value="${l.nome}" oninput="renameLevel(${i},${li},this.value)">
-<button onclick="deleteLevel(${i},${li})">x</button>
+<button class="smallBtn" onclick="deleteLevel(${i},${li})">🗑</button>
 </div>
 `;
 });
 
-sv.appendChild(d);
+c.appendChild(d);
 });
+}
 
-const iv = $("items");
-iv.innerHTML="";
+/* ================= RENDER ITEMS (FIX POPUP QUI) ================= */
 
-state.inventario.forEach(o=>{
-const d = document.createElement("div");
+function renderItems(){
+const c=$("items");
+c.innerHTML="";
+
+state.inventario.forEach(i=>{
+
+const d=document.createElement("div");
 d.className="item";
+
+/* 🔴 FIX IMPORTANTE: onclick su container */
+d.onclick=()=>openModal(i);
 
 d.innerHTML=`
 <div style="width:50px;height:50px;background:#eee;border-radius:10px"></div>
-<div><b>${o.nome}</b><br><small>${o.categoria||"-"}</small></div>
+
+<div>
+<b>${i.nome}</b><br>
+<small>${i.categoria||"-"}</small>
+</div>
 `;
 
-iv.appendChild(d);
+c.appendChild(d);
 });
+}
 
-/* selectors */
-const s = $("shelfSelect");
+/* ================= SELECT ================= */
+
+function updateSelectors(){
+
+const s=$("shelfSelect");
 s.innerHTML="";
 
 state.scaffali.forEach((x,i)=>{
@@ -479,21 +426,29 @@ updateLevels();
 }
 
 function updateLevels(){
-const i = Number($("shelfSelect").value);
-const l = $("levelSelect");
+const i=Number($("shelfSelect").value);
+const l=$("levelSelect");
 
 l.innerHTML="";
-
 if(!state.scaffali[i]) return;
 
-(state.scaffali[i].livelli||[]).forEach((x,idx)=>{
+state.scaffali[i].livelli.forEach((x,idx)=>{
 l.innerHTML+=`<option value="${idx}">${x.nome}</option>`;
 });
 }
 
-$("shelfSelect").onchange = updateLevels;
+$("shelfSelect").onchange=updateLevels;
 
-/* INIT */
+/* ================= MAIN ================= */
+
+function render(){
+renderShelves();
+renderItems();
+updateSelectors();
+}
+
+/* ================= INIT ================= */
+
 render();
 
 </script>
