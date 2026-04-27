@@ -12,8 +12,10 @@ body{
 margin:0;
 font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 background:#f2f2f7;
+color:#111;
 }
 
+/* HEADER */
 header{
 position:sticky;
 top:0;
@@ -25,57 +27,98 @@ z-index:10;
 .headerBar{
 display:flex;
 justify-content:space-between;
-padding:12px 14px;
 align-items:center;
+padding:10px 12px;
 }
 
-.title{font-weight:700}
+.title{
+font-weight:700;
+font-size:15px;
+}
+
+/* UNDO REDO SMALL */
+.undoRedo{
+display:flex;
+gap:6px;
+}
 
 .undoRedo button{
+width:28px;
+height:28px;
+padding:0;
+border-radius:8px;
+font-size:12px;
 background:#1c1c1e;
 color:#fff;
 border:none;
-padding:6px 10px;
-border-radius:10px;
-font-size:12px;
+display:flex;
+align-items:center;
+justify-content:center;
 }
 
-/* layout */
-.container{padding:14px;max-width:900px;margin:auto}
+/* LAYOUT */
+.container{
+padding:12px;
+max-width:900px;
+margin:auto;
+}
 
 .section{
 background:#fff;
-padding:16px;
-border-radius:16px;
-margin-top:14px;
-box-shadow:0 6px 18px rgba(0,0,0,0.04);
+padding:14px;
+border-radius:14px;
+margin-top:12px;
+box-shadow:0 4px 14px rgba(0,0,0,0.04);
 }
 
-input,select,button{
+h3{
+margin:0 0 10px 0;
+font-size:14px;
+}
+
+/* INPUTS */
+input,select{
 width:100%;
-padding:12px;
-margin-top:8px;
-border-radius:12px;
+padding:10px;
+margin-top:6px;
+border-radius:10px;
 border:1px solid #ddd;
+font-size:13px;
 }
 
 button{
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:10px;
+border:none;
 background:#007aff;
 color:#fff;
-border:none;
 font-weight:600;
+font-size:13px;
 }
 
-.danger{background:#ff3b30}
-
-/* scaffali */
+/* SCAFFALI */
 .shelfCard{
 margin-top:10px;
-padding:12px;
+padding:10px;
 border:1px solid #eee;
 border-radius:12px;
+background:#fff;
 }
 
+.shelfHeader{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:8px;
+}
+
+.shelfHeader strong{
+font-size:13px;
+}
+
+/* LEVEL ROW */
 .levelRow{
 display:flex;
 gap:6px;
@@ -92,37 +135,60 @@ border-radius:8px;
 font-size:12px;
 }
 
-/* items */
+/* SMALL BUTTONS */
+.smallBtn{
+width:26px;
+height:26px;
+padding:0;
+border-radius:8px;
+font-size:11px;
+display:flex;
+align-items:center;
+justify-content:center;
+border:none;
+cursor:pointer;
+}
+
+.smallBtn.danger{background:#ff3b30;color:#fff}
+.smallBtn.blue{background:#007aff;color:#fff}
+
+/* ITEMS */
 .itemCard{
 display:flex;
-gap:12px;
+gap:10px;
 align-items:center;
-padding:12px;
+padding:10px;
+border-radius:12px;
 border:1px solid #eee;
-border-radius:14px;
 margin-top:10px;
 background:#fff;
 }
 
 .itemImg{
-width:56px;
-height:56px;
+width:48px;
+height:48px;
 background:#eee;
-border-radius:12px;
-object-fit:cover;
+border-radius:10px;
 }
 
 .itemInfo{flex:1}
 
-.itemTitle{font-weight:600}
+.itemTitle{
+font-weight:600;
+font-size:13px;
+}
 
-.itemMeta{font-size:12px;opacity:.7;margin-top:4px}
-
-/* category */
-.categoryBadge{
-padding:3px 8px;
-border-radius:8px;
+.itemMeta{
 font-size:11px;
+opacity:.7;
+margin-top:3px;
+}
+
+/* BADGE */
+.categoryBadge{
+padding:2px 6px;
+border-radius:6px;
+font-size:10px;
 color:#fff;
 font-weight:600;
 }
@@ -134,9 +200,10 @@ font-weight:600;
 <header>
 <div class="headerBar">
 <div class="title">🚗 Garage Pro</div>
+
 <div class="undoRedo">
-<button onclick="undo()">↩️</button>
-<button onclick="redo()">↪️</button>
+<button onclick="undo()">↩</button>
+<button onclick="redo()">↪</button>
 </div>
 </div>
 </header>
@@ -146,7 +213,7 @@ font-weight:600;
 <div class="section">
 <h3>Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<button onclick="addShelf()">Crea</button>
+<button onclick="addShelf()">Crea scaffale</button>
 <div id="shelfView"></div>
 </div>
 
@@ -161,7 +228,7 @@ font-weight:600;
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
-<button onclick="addItem()">Salva</button>
+<button onclick="addItem()">Salva oggetto</button>
 </div>
 
 <div class="section">
@@ -251,7 +318,7 @@ render();
 
 function renameLevel(i,l,val){
 scaffali[i].livelli[l].nome = val;
-save(); // ✅ FIX CRITICO
+save();
 }
 
 /* ===== ITEMS ===== */
@@ -288,8 +355,10 @@ let div=document.createElement("div");
 div.className="shelfCard";
 
 div.innerHTML=`
+<div class="shelfHeader">
 <strong>${s.nome}</strong>
-<button onclick="addLevel(${i})">➕ ripiano</button>
+<button class="smallBtn blue" onclick="addLevel(${i})">+</button>
+</div>
 `;
 
 (s.livelli||[]).forEach((l,idx)=>{
@@ -297,7 +366,7 @@ div.innerHTML+=`
 <div class="levelRow">
 <input value="${l.nome}"
 oninput="renameLevel(${i},${idx},this.value)">
-<button class="danger" onclick="deleteLevel(${i},${idx})">🗑</button>
+<button class="smallBtn danger" onclick="deleteLevel(${i},${idx})">×</button>
 </div>
 `;
 });
@@ -352,7 +421,6 @@ s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
 updateLevels();
 }
 
-/* ✅ FIX: safe + sempre aggiornato */
 function updateLevels(){
 
 let i=Number($("selectShelf").value);
@@ -360,7 +428,7 @@ let l=$("selectLevel");
 
 l.innerHTML="";
 
-if(!scaffali[i] || !scaffali[i].livelli) return;
+if(!scaffali[i]) return;
 
 scaffali[i].livelli.forEach((lv,idx)=>{
 l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
