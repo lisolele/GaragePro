@@ -14,15 +14,36 @@ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 background:#f2f2f7;
 }
 
+/* HEADER */
 header{
 position:sticky;
 top:0;
 background:#fff;
 border-bottom:1px solid #eee;
-padding:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:10px 12px;
 font-weight:700;
 }
 
+.actions{
+display:flex;
+gap:6px;
+}
+
+.actions button{
+width:auto;
+padding:4px 8px;
+font-size:12px;
+border-radius:8px;
+background:#1c1c1e;
+color:#fff;
+border:none;
+cursor:pointer;
+}
+
+/* layout */
 .container{padding:12px;max-width:900px;margin:auto}
 
 .section{
@@ -47,8 +68,6 @@ border:none;
 font-weight:600;
 }
 
-.danger{background:#ff3b30}
-
 /* items */
 .item{
 display:flex;
@@ -63,8 +82,7 @@ cursor:pointer;
 }
 
 .item img{
-width:50px;
-height:50px;
+width:50px;height:50px;
 border-radius:10px;
 object-fit:cover;
 background:#eee;
@@ -114,7 +132,14 @@ max-height:100%;
 
 <body>
 
-<header>🚗 Garage Pro</header>
+<header>
+<div>🚗 Garage Pro</div>
+
+<div class="actions">
+<button onclick="undo()">↩</button>
+<button onclick="redo()">↪</button>
+</div>
+</header>
 
 <div class="container">
 
@@ -131,7 +156,6 @@ max-height:100%;
 <input id="itemName" placeholder="Nome">
 <input id="itemCat" placeholder="Categoria">
 
-<!-- 📁 FILE INPUT -->
 <input type="file" id="fileImg" accept="image/*">
 <img id="preview" style="width:60px;display:none;margin-top:6px;border-radius:8px">
 
@@ -166,12 +190,31 @@ max-height:100%;
 
 /* ================= STATE ================= */
 
-const state = {
+let state = {
 scaffali: JSON.parse(localStorage.getItem("shel")) || [],
 inventario: JSON.parse(localStorage.getItem("inv")) || []
 };
 
+let undoStack = [];
+let redoStack = [];
+
 const $ = id => document.getElementById(id);
+
+/* ================= SNAPSHOT ENGINE ================= */
+
+function snapshot(){
+return JSON.stringify(state);
+}
+
+function restore(s){
+state = JSON.parse(s);
+}
+
+/* salva in history prima di ogni modifica */
+function pushUndo(){
+undoStack.push(snapshot());
+redoStack = [];
+}
 
 /* ================= SAVE ================= */
 
@@ -180,19 +223,41 @@ localStorage.setItem("shel", JSON.stringify(state.scaffali));
 localStorage.setItem("inv", JSON.stringify(state.inventario));
 }
 
-/* ================= IMAGE → BASE64 ================= */
+/* ================= UNDO / REDO ================= */
+
+function undo(){
+if(!undoStack.length) return;
+
+redoStack.push(snapshot());
+restore(undoStack.pop());
+
+save();
+render();
+}
+
+function redo(){
+if(!redoStack.length) return;
+
+undoStack.push(snapshot());
+restore(redoStack.pop());
+
+save();
+render();
+}
+
+/* ================= IMAGE ================= */
 
 function fileToBase64(file){
 return new Promise(res=>{
-const reader = new FileReader();
-reader.onload = ()=>res(reader.result);
-reader.readAsDataURL(file);
+const r = new FileReader();
+r.onload = ()=>res(r.result);
+r.readAsDataURL(file);
 });
 }
 
 /* preview */
-$("fileImg").onchange = (e)=>{
-const f = e.target.files[0];
+$("fileImg").onchange = e=>{
+let f = e.target.files[0];
 if(!f) return;
 $("preview").src = URL.createObjectURL(f);
 $("preview").style.display="block";
@@ -203,6 +268,8 @@ $("preview").style.display="block";
 function addShelf(){
 const name = $("shelfName").value.trim();
 if(!name) return;
+
+pushUndo();
 
 state.scaffali.push({
 nome:name,
@@ -221,12 +288,11 @@ async function addItem(){
 const name = $("itemName").value.trim();
 if(!name) return;
 
-let img = "";
+pushUndo();
 
+let img = "";
 const file = $("fileImg").files[0];
-if(file){
-img = await fileToBase64(file);
-}
+if(file) img = await fileToBase64(file);
 
 state.inventario.push({
 id:Date.now(),
@@ -246,10 +312,9 @@ save();
 render();
 }
 
-/* ================= POPUP ================= */
+/* ================= MODAL ================= */
 
 function openModal(i){
-
 $("mTitle").textContent=i.nome;
 $("mCat").textContent=i.categoria||"-";
 
@@ -282,56 +347,44 @@ $("zoom").style.display="none";
 
 function render(){
 
-/* scaffali */
 let s = $("shelfView");
 s.innerHTML="";
 
-state.scaffali.forEach((sh,i)=>{
-
-let div=document.createElement("div");
-
-div.innerHTML=`
-<b>${sh.nome}</b>
-`;
-
-s.appendChild(div);
+state.scaffali.forEach(sh=>{
+s.innerHTML += `<div><b>${sh.nome}</b></div>`;
 });
 
-/* items */
 let c = $("items");
 c.innerHTML="";
 
 state.inventario.forEach(i=>{
 
-const div=document.createElement("div");
+const div = document.createElement("div");
 div.className="item";
 div.onclick=()=>openModal(i);
 
 div.innerHTML=`
 ${i.img ? `<img src="${i.img}">` : `<div style="width:50px;height:50px;background:#eee;border-radius:10px"></div>`}
-
 <div>
-<div><b>${i.nome}</b></div>
-<div style="font-size:11px;opacity:.6">${i.categoria||"-"}</div>
+<b>${i.nome}</b><br>
+<small>${i.categoria||"-"}</small>
 </div>
 `;
 
 c.appendChild(div);
 });
 
-/* selectors */
 let sel = $("shelfSelect");
 sel.innerHTML="";
 
 state.scaffali.forEach((s,i)=>{
-sel.innerHTML+=`<option value="${i}">${s.nome}</option>`;
+sel.innerHTML += `<option value="${i}">${s.nome}</option>`;
 });
 
 updateLevels();
 }
 
 function updateLevels(){
-
 let i = Number($("shelfSelect").value);
 let l = $("levelSelect");
 
@@ -340,7 +393,7 @@ l.innerHTML="";
 if(!state.scaffali[i]) return;
 
 state.scaffali[i].livelli.forEach((x,idx)=>{
-l.innerHTML+=`<option value="${idx}">${x.nome}</option>`;
+l.innerHTML += `<option value="${idx}">${x.nome}</option>`;
 });
 }
 
