@@ -14,17 +14,50 @@ body{
     background:#f2f2f7;
 }
 
+/* ===== HEADER ===== */
 header{
-    padding:16px;
-    text-align:center;
-    background:white;
-    font-weight:700;
     position:sticky;
     top:0;
     z-index:10;
+    background:white;
     border-bottom:1px solid #eee;
 }
 
+.headerBar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+}
+
+.title{
+    font-weight:700;
+    font-size:16px;
+}
+
+/* undo/redo in header */
+.undoRedo{
+    display:flex;
+    gap:6px;
+}
+
+.undoRedo button{
+    width:auto;
+    padding:6px 10px;
+    font-size:12px;
+    border-radius:10px;
+    background:#1c1c1e;
+    color:white;
+    border:none;
+    font-weight:600;
+    transition:0.15s;
+}
+
+.undoRedo button:hover{
+    transform:scale(1.08);
+}
+
+/* ===== LAYOUT ===== */
 .container{
     padding:14px;
     max-width:900px;
@@ -45,7 +78,6 @@ input,select,button{
     margin-top:8px;
     border-radius:12px;
     border:1px solid #ddd;
-    font-size:15px;
 }
 
 button{
@@ -53,98 +85,64 @@ button{
     color:white;
     border:none;
     font-weight:600;
-    cursor:pointer;
 }
 
 .danger{ background:#ff3b30; }
 
-.shelfGrid{
+/* ===== CARD OGGETTI ===== */
+.itemCard{
     display:flex;
+    align-items:center;
     gap:12px;
-    overflow-x:auto;
-}
-
-.shelf{
-    min-width:280px;
-    background:#f9f9fb;
-    border-radius:18px;
     padding:12px;
-}
-
-.shelfHeader{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-}
-
-.level{
-    background:white;
     margin-top:10px;
-    padding:10px;
-    border-radius:12px;
-    border:1px solid #eee;
-}
-
-.small{
-    font-size:11px;
-    opacity:0.6;
-}
-
-#items div{
+    border-radius:16px;
     background:white;
-    padding:10px;
-    margin-top:8px;
-    border-radius:12px;
     border:1px solid #eee;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+    box-shadow:0 4px 10px rgba(0,0,0,0.03);
 }
 
-mark{
-    background:#ffe066;
-    padding:2px 4px;
-    border-radius:6px;
-}
-
-img.thumb{
-    width:50px;
-    height:50px;
+.itemImg{
+    width:56px;
+    height:56px;
+    border-radius:12px;
     object-fit:cover;
+    background:#eee;
+}
+
+.itemInfo{
+    flex:1;
+}
+
+.itemTitle{
+    font-weight:600;
+}
+
+.itemMeta{
+    font-size:12px;
+    opacity:0.75;
+    margin-top:4px;
+}
+
+/* ===== CATEGORY BADGE ===== */
+.categoryBadge{
+    display:inline-block;
+    padding:3px 8px;
     border-radius:8px;
-}
-
-#preview{
-    width:80px;
-    margin-top:8px;
-    border-radius:10px;
-    display:none;
-}
-
-#undoBar{
-    position:fixed;
-    bottom:20px;
-    left:50%;
-    transform:translateX(-50%);
-    background:#1c1c1e;
+    font-size:11px;
+    font-weight:600;
     color:white;
-    padding:10px 12px;
-    border-radius:14px;
-    display:flex;
-    gap:10px;
-    z-index:999;
 }
 
-/* MODAL */
+/* ===== MODAL ===== */
 #modal{
     display:none;
     position:fixed;
     inset:0;
     background:rgba(0,0,0,0.4);
-    z-index:9999;
     justify-content:center;
     align-items:center;
+    z-index:9999;
 }
 
 .modalBox{
@@ -153,10 +151,9 @@ img.thumb{
     border-radius:18px;
     width:90%;
     max-width:400px;
-    transition:transform .25s ease;
 }
 
-/* ZOOM */
+/* ===== ZOOM ===== */
 #zoomOverlay{
     position:fixed;
     inset:0;
@@ -172,72 +169,80 @@ img.thumb{
     max-height:95%;
     border-radius:12px;
 }
+
+/* ===== PREVIEW ===== */
+#preview{
+    width:80px;
+    margin-top:8px;
+    display:none;
+}
 </style>
 </head>
 
 <body>
 
-<header>🚗 Garage Pro</header>
+<header>
+    <div class="headerBar">
+        <div class="title">🚗 Garage Pro</div>
+
+        <div class="undoRedo">
+            <button onclick="undo()">↩️</button>
+            <button onclick="redo()">↪️</button>
+        </div>
+    </div>
+</header>
 
 <div class="container">
 
 <div class="section">
-<h3>🗄️ Scaffali</h3>
+<h3>Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<button onclick="aggiungiScaffale()">Crea scaffale</button>
-<div id="shelfView" class="shelfGrid"></div>
+<button onclick="aggiungiScaffale()">Crea</button>
+<div id="shelfView"></div>
 </div>
 
 <div class="section">
-<h3>📦 Oggetti</h3>
+<h3>Oggetti</h3>
 
-<input id="search" placeholder="🔍 Cerca..." oninput="renderItems()">
+<input id="search" placeholder="Cerca..." oninput="renderItems()">
 
 <input id="nome" placeholder="Nome">
 <input id="categoria" placeholder="Categoria">
 
-<input type="file" id="foto" accept="image/*">
+<input type="file" id="foto">
 <img id="preview">
 
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
-<button onclick="salva()">Salva oggetto</button>
+<button onclick="salva()">Salva</button>
 </div>
 
 <div class="section">
-<h3>📋 Oggetti</h3>
+<h3>Lista</h3>
 <div id="items"></div>
 </div>
 
 </div>
 
-<div id="undoBar">
-<button onclick="undo()">↩️ Undo</button>
-<button onclick="redo()">↪️ Redo</button>
-</div>
-
 <!-- MODAL -->
 <div id="modal">
-    <div class="modalBox">
-        <div id="modalContent"></div>
-        <button onclick="closeModal()">Chiudi</button>
-    </div>
+<div class="modalBox">
+<div id="modalContent"></div>
+<button onclick="closeModal()">Chiudi</button>
+</div>
 </div>
 
 <!-- ZOOM -->
 <div id="zoomOverlay" onclick="closeZoom()">
-    <img id="zoomImg">
+<img id="zoomImg">
 </div>
 
 <script>
 
-/* ===== LOAD ===== */
-let inventario=[], scaffali=[];
-try{
-    inventario=JSON.parse(localStorage.getItem("inv"))||[];
-    scaffali=JSON.parse(localStorage.getItem("shel"))||[];
-}catch{}
+/* ===== DATA ===== */
+let inventario = JSON.parse(localStorage.getItem("inv"))||[];
+let scaffali = JSON.parse(localStorage.getItem("shel"))||[];
 
 let undoStack=[], redoStack=[];
 let currentImg=null;
@@ -246,293 +251,239 @@ const $=id=>document.getElementById(id);
 
 /* ===== SAVE ===== */
 function save(){
-    localStorage.setItem("inv",JSON.stringify(inventario));
-    localStorage.setItem("shel",JSON.stringify(scaffali));
+localStorage.setItem("inv",JSON.stringify(inventario));
+localStorage.setItem("shel",JSON.stringify(scaffali));
 }
 
 /* ===== STATE ===== */
 function saveState(){
-    undoStack.push({
-        inventario:structuredClone(inventario),
-        scaffali:structuredClone(scaffali)
-    });
-    redoStack=[];
+undoStack.push(structuredClone({inventario,scaffali}));
+redoStack=[];
 }
 
-/* ===== UNDO REDO ===== */
+/* ===== UNDO / REDO ===== */
 function undo(){
-    if(!undoStack.length) return;
-    redoStack.push(structuredClone({inventario,scaffali}));
-    let s=undoStack.pop();
-    inventario=s.inventario;
-    scaffali=s.scaffali;
-    save(); render();
-}
-function redo(){
-    if(!redoStack.length) return;
-    undoStack.push(structuredClone({inventario,scaffali}));
-    let s=redoStack.pop();
-    inventario=s.inventario;
-    scaffali=s.scaffali;
-    save(); render();
+if(!undoStack.length) return;
+redoStack.push(structuredClone({inventario,scaffali}));
+let s=undoStack.pop();
+inventario=s.inventario;
+scaffali=s.scaffali;
+save(); render();
 }
 
-/* ===== UTILS ===== */
-function escapeHTML(str){
-    return String(str).replace(/[&<>"']/g,m=>({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-    }[m]));
+function redo(){
+if(!redoStack.length) return;
+undoStack.push(structuredClone({inventario,scaffali}));
+let s=redoStack.pop();
+inventario=s.inventario;
+scaffali=s.scaffali;
+save(); render();
 }
-function escapeRegExp(str){
-    return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+
+/* ===== COLORI CATEGORIA ===== */
+function getCategoryColor(cat){
+if(!cat) return "#999";
+let hash=0;
+for(let i=0;i<cat.length;i++){
+hash=cat.charCodeAt(i)+((hash<<5)-hash);
 }
-function highlight(text,q){
-    if(!q) return escapeHTML(text);
-    return escapeHTML(text).replace(new RegExp(`(${escapeRegExp(q)})`,"gi"),"<mark>$1</mark>");
+return `hsl(${hash%360},70%,50%)`;
 }
+
+/* ===== IMAGE ===== */
 function toBase64(file){
-    return new Promise((res,rej)=>{
-        let r=new FileReader();
-        r.readAsDataURL(file);
-        r.onload=()=>res(r.result);
-        r.onerror=rej;
-    });
+return new Promise(r=>{
+let reader=new FileReader();
+reader.onload=()=>r(reader.result);
+reader.readAsDataURL(file);
+});
 }
 
 /* ===== PREVIEW ===== */
-$("foto").addEventListener("change",e=>{
-    let f=e.target.files[0];
-    if(f){
-        $("preview").src=URL.createObjectURL(f);
-        $("preview").style.display="block";
-    }
+$("foto").onchange=e=>{
+let f=e.target.files[0];
+if(f){
+$("preview").src=URL.createObjectURL(f);
+$("preview").style.display="block";
+}
+};
+
+/* ===== CRUD ===== */
+async function salva(){
+let nome=$("nome").value.trim();
+if(!nome) return alert("Nome obbligatorio");
+
+let shelf=$("selectShelf").value;
+let level=$("selectLevel").value;
+
+saveState();
+
+let img=currentImg;
+let f=$("foto").files[0];
+if(f) img=await toBase64(f);
+
+inventario.push({
+id:Date.now(),
+nome,
+categoria:$("categoria").value,
+shelf:Number(shelf),
+level:Number(level),
+img
 });
 
-/* ===== MODAL ===== */
-function openModal(item){
-    const shelfName=scaffali[item.shelf]?.nome||"-";
-    const level=item.level!=null?(item.level+1):"-";
+currentImg=null;
+$("nome").value="";
+$("categoria").value="";
+$("foto").value="";
+$("preview").style.display="none";
 
-    $("modalContent").innerHTML=`
-        ${item.img?`<img src="${item.img}" onclick="zoomImage('${item.img}')" style="width:100%;border-radius:12px;margin-bottom:10px;cursor:zoom-in;">`:""}
-        <h3>${escapeHTML(item.nome)}</h3>
-        <div class="small">Categoria: ${escapeHTML(item.categoria||"-")}</div>
-        <div class="small">Scaffale: ${escapeHTML(shelfName)}</div>
-        <div class="small">Ripiano: ${level}</div>
-
-        <div style="display:flex;gap:8px;margin-top:12px;">
-            <button onclick="editItem(${item.id});closeModal()">✏️</button>
-            <button class="danger" onclick="deleteItem(${item.id});closeModal()">🗑</button>
-        </div>
-    `;
-    $("modal").style.display="flex";
+render();
 }
+
+function editItem(id){
+let i=inventario.find(x=>x.id==id);
+if(!i) return;
+
+saveState();
+
+$("nome").value=i.nome;
+$("categoria").value=i.categoria;
+$("selectShelf").value=i.shelf;
+
+updateLevels();
+$("selectLevel").value=i.level;
+
+currentImg=i.img;
+
+inventario=inventario.filter(x=>x.id!=id);
+render();
+}
+
+function deleteItem(id){
+saveState();
+inventario=inventario.filter(i=>i.id!=id);
+render();
+}
+
+/* ===== MODAL ===== */
+function openModal(i){
+$("modalContent").innerHTML=`
+${i.img?`<img src="${i.img}" onclick="zoomImage('${i.img}')" style="width:100%;border-radius:12px;cursor:zoom-in;">`:""}
+<h3>${i.nome}</h3>
+
+<div>
+<span class="categoryBadge" style="background:${getCategoryColor(i.categoria)}">
+${i.categoria||"-"}
+</span>
+</div>
+
+<div style="margin-top:8px;">
+Scaffale ${scaffali[i.shelf]?.nome||"-"} • Ripiano ${i.level+1}
+</div>
+`;
+$("modal").style.display="flex";
+}
+
 function closeModal(){
-    $("modal").style.display="none";
-    document.querySelector(".modalBox").style.transform="translateY(0)";
+$("modal").style.display="none";
 }
 
 /* ===== ZOOM ===== */
 function zoomImage(src){
-    $("zoomImg").src=src;
-    $("zoomOverlay").style.display="flex";
+$("zoomImg").src=src;
+$("zoomOverlay").style.display="flex";
 }
 function closeZoom(){
-    $("zoomOverlay").style.display="none";
+$("zoomOverlay").style.display="none";
 }
 
-/* ===== SWIPE DOWN ===== */
-let startY=0,currentY=0,isDragging=false;
+/* ===== SWIPE CLOSE ===== */
+let startY=0;
 
 $("modal").addEventListener("touchstart",e=>{
-    startY=e.touches[0].clientY;
-    isDragging=true;
-});
-$("modal").addEventListener("touchmove",e=>{
-    if(!isDragging) return;
-    currentY=e.touches[0].clientY;
-    let diff=currentY-startY;
-    if(diff>0){
-        document.querySelector(".modalBox").style.transform=`translateY(${diff}px)`;
-    }
-});
-$("modal").addEventListener("touchend",()=>{
-    isDragging=false;
-    let diff=currentY-startY;
-    if(diff>120) closeModal();
-    else document.querySelector(".modalBox").style.transform="translateY(0)";
+startY=e.touches[0].clientY;
 });
 
-/* ===== SCAFFALI ===== */
-function aggiungiScaffale(){
-    let n=$("shelfName").value.trim();
-    if(!n) return alert("Nome obbligatorio");
-    saveState();
-    scaffali.push({nome:n,livelli:1});
-    $("shelfName").value="";
-    render();
-}
-function changeLevels(i,d){
-    saveState();
-    scaffali[i].livelli=Math.max(1,scaffali[i].livelli+d);
-    inventario.forEach(o=>{
-        if(o.shelf===i && o.level>=scaffali[i].livelli){
-            o.level=scaffali[i].livelli-1;
-        }
-    });
-    render();
-}
-
-/* ===== OGGETTI ===== */
-async function salva(){
-    let nome=$("nome").value.trim();
-    if(!nome) return alert("Nome obbligatorio");
-
-    let shelf=$("selectShelf").value;
-    let level=$("selectLevel").value;
-
-    if(shelf===""||level==="") return alert("Seleziona");
-
-    saveState();
-
-    let img=currentImg;
-    let f=$("foto").files[0];
-    if(f) img=await toBase64(f);
-
-    inventario.push({
-        id:Date.now(),
-        nome,
-        categoria:$("categoria").value,
-        shelf:Number(shelf),
-        level:Number(level),
-        img
-    });
-
-    currentImg=null;
-    $("nome").value="";
-    $("categoria").value="";
-    $("foto").value="";
-    $("preview").style.display="none";
-
-    render();
-}
-
-function editItem(id){
-    let i=inventario.find(x=>x.id==id);
-    if(!i) return;
-
-    saveState();
-
-    $("nome").value=i.nome;
-    $("categoria").value=i.categoria;
-    $("selectShelf").value=i.shelf;
-
-    updateLevels();
-    $("selectLevel").value=i.level;
-
-    currentImg=i.img;
-
-    if(i.img){
-        $("preview").src=i.img;
-        $("preview").style.display="block";
-    }
-
-    inventario=inventario.filter(x=>x.id!=id);
-    render();
-}
-
-function deleteItem(id){
-    saveState();
-    inventario=inventario.filter(i=>i.id!=id);
-    render();
-}
+$("modal").addEventListener("touchend",e=>{
+let diff=e.changedTouches[0].clientY-startY;
+if(diff>120) closeModal();
+});
 
 /* ===== RENDER ===== */
 function renderItems(){
-    let c=$("items"); c.innerHTML="";
-    let q=$("search").value.toLowerCase();
+let c=$("items");
+c.innerHTML="";
+let q=$("search").value.toLowerCase();
 
-    inventario.forEach(i=>{
-        if(q && !i.nome.toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
+inventario.forEach(i=>{
+if(q && !i.nome.toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
 
-        let d=document.createElement("div");
-        d.style.cursor="pointer";
-        d.onclick=()=>openModal(i);
+let shelfName=scaffali[i.shelf]?.nome||"-";
 
-        d.innerHTML=`
-        <div style="display:flex;gap:10px;align-items:center;">
-            ${i.img?`<img src="${i.img}" class="thumb">`:""}
-            <div>
-                <b>${highlight(i.nome,q)}</b><br>
-                <span class="small">${highlight(i.categoria||"",q)}</span>
-            </div>
-        </div>
-        <div style="display:flex;gap:6px;">
-            <button onclick="event.stopPropagation();editItem(${i.id})">✏️</button>
-            <button class="danger" onclick="event.stopPropagation();deleteItem(${i.id})">🗑</button>
-        </div>`;
+let d=document.createElement("div");
+d.className="itemCard";
+d.onclick=()=>openModal(i);
 
-        c.appendChild(d);
-    });
+d.innerHTML=`
+${i.img?`<img src="${i.img}" class="itemImg">`:`<div class="itemImg"></div>`}
+
+<div class="itemInfo">
+<div class="itemTitle">${i.nome}</div>
+
+<div class="itemMeta">
+<span class="categoryBadge" style="background:${getCategoryColor(i.categoria)}">
+${i.categoria||"-"}
+</span>
+• ${shelfName} • Ripiano ${i.level+1}
+</div>
+
+</div>
+
+<div>
+<button onclick="event.stopPropagation();editItem(${i.id})">✏️</button>
+<button class="danger" onclick="event.stopPropagation();deleteItem(${i.id})">🗑</button>
+</div>
+`;
+
+c.appendChild(d);
+});
 }
 
-function renderShelves(){
-    let c=$("shelfView"); c.innerHTML="";
-    scaffali.forEach((s,i)=>{
-        let d=document.createElement("div");
-        d.className="shelf";
-        d.innerHTML=`
-        <div class="shelfHeader">
-            <input value="${escapeHTML(s.nome)}"
-            oninput="scaffali[${i}].nome=this.value;save();"
-            style="border:none;background:transparent;font-weight:700;width:60%;">
-            <div style="display:flex;gap:6px;">
-                <button onclick="changeLevels(${i},1)">+</button>
-                <button class="danger" onclick="changeLevels(${i},-1)">-</button>
-            </div>
-        </div>`;
-        for(let l=0;l<s.livelli;l++){
-            let lv=document.createElement("div");
-            lv.className="level";
-            let items=inventario.filter(o=>o.shelf===i && o.level===l);
-            lv.innerHTML=`<div class="small">Ripiano ${l+1}</div>
-            <div>${items.map(o=>"• "+escapeHTML(o.nome)).join("<br>")||"(vuoto)"}</div>`;
-            d.appendChild(lv);
-        }
-        c.appendChild(d);
-    });
-}
-
-function updateSelectors(){
-    let s=$("selectShelf"),l=$("selectLevel");
-    s.innerHTML="";
-    if(!scaffali.length){
-        s.innerHTML="<option value=''>--</option>";
-        l.innerHTML="<option>--</option>";
-        return;
-    }
-    scaffali.forEach((sh,i)=>{
-        s.innerHTML+=`<option value="${i}">${escapeHTML(sh.nome)}</option>`;
-    });
-    updateLevels();
-}
-function updateLevels(){
-    let i=$("selectShelf").value;
-    let l=$("selectLevel");
-    l.innerHTML="";
-    if(!scaffali[i]) return;
-    for(let j=0;j<scaffali[i].livelli;j++){
-        l.innerHTML+=`<option value="${j}">Ripiano ${j+1}</option>`;
-    }
-}
-
-$("selectShelf").addEventListener("change",updateLevels);
-
-/* ===== INIT ===== */
 function render(){
-    renderShelves();
-    renderItems();
-    updateSelectors();
+renderItems();
+updateSelectors();
+}
+
+/* ===== SELECT ===== */
+function updateSelectors(){
+let s=$("selectShelf");
+s.innerHTML="";
+scaffali.forEach((sh,i)=>{
+s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
+});
+updateLevels();
+}
+
+function updateLevels(){
+let i=$("selectShelf").value;
+let l=$("selectLevel");
+l.innerHTML="";
+if(!scaffali[i]) return;
+for(let j=0;j<scaffali[i].livelli;j++){
+l.innerHTML+=`<option value="${j}">Ripiano ${j+1}</option>`;
+}
+}
+
+$("selectShelf").onchange=updateLevels;
+
+/* ===== SCAFFALI ===== */
+function aggiungiScaffale(){
+let n=$("shelfName").value;
+if(!n) return;
+saveState();
+scaffali.push({nome:n,livelli:1});
+$("shelfName").value="";
+render();
 }
 
 render();
