@@ -16,16 +16,15 @@ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 background:#f2f2f7;
 }
 
-/* HEADER */
 header{
 position:sticky;
 top:0;
 background:#fff;
-border-bottom:1px solid #eee;
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:10px 12px;
+border-bottom:1px solid #eee;
 font-weight:700;
 z-index:10;
 }
@@ -33,7 +32,6 @@ z-index:10;
 .actions{
 display:flex;
 gap:6px;
-align-items:center;
 }
 
 .actions button{
@@ -44,10 +42,8 @@ border-radius:8px;
 background:#1c1c1e;
 color:#fff;
 border:none;
-cursor:pointer;
 }
 
-/* LAYOUT */
 .container{padding:12px;max-width:900px;margin:auto}
 
 .section{
@@ -72,11 +68,41 @@ border:none;
 font-weight:600;
 }
 
+/* SCAFFALI */
+.shelf{
+border:1px solid #eee;
+border-radius:12px;
+padding:10px;
+margin-top:10px;
+background:#fafafa;
+}
+
+.level{
+display:flex;
+gap:6px;
+margin-top:6px;
+align-items:center;
+}
+
+.level input{
+flex:1;
+border:none;
+background:#fff;
+padding:6px;
+border-radius:8px;
+font-size:12px;
+}
+
+.smallBtn{
+width:auto;
+padding:4px 6px;
+font-size:11px;
+}
+
 /* ITEMS */
 .item{
 display:flex;
 gap:10px;
-align-items:center;
 padding:10px;
 border:1px solid #eee;
 border-radius:12px;
@@ -101,7 +127,6 @@ inset:0;
 background:rgba(0,0,0,.6);
 justify-content:center;
 align-items:center;
-z-index:20;
 }
 
 .box{
@@ -112,14 +137,6 @@ width:90%;
 max-width:420px;
 }
 
-.box img{
-width:100%;
-border-radius:10px;
-margin-top:10px;
-cursor:zoom-in;
-}
-
-/* ZOOM */
 #zoom{
 display:none;
 position:fixed;
@@ -127,7 +144,6 @@ inset:0;
 background:#000;
 justify-content:center;
 align-items:center;
-z-index:30;
 }
 
 #zoom img{
@@ -143,15 +159,12 @@ max-height:100%;
 <div>🚗 Garage Pro</div>
 
 <div class="actions">
-
 <button onclick="undo()">↩</button>
 <button onclick="redo()">↪</button>
 <button onclick="exportPDF()">📄</button>
-
 <button onclick="exportData()">⬇</button>
 <button onclick="document.getElementById('fileInput').click()">⬆</button>
-
-<input id="fileInput" type="file" hidden accept="application/json" onchange="importData(event)">
+<input type="file" id="fileInput" hidden onchange="importData(event)">
 </div>
 </header>
 
@@ -166,16 +179,11 @@ max-height:100%;
 
 <div class="section">
 <h3>Oggetti</h3>
-
 <input id="itemName" placeholder="Nome">
 <input id="itemCat" placeholder="Categoria">
-
-<input type="file" id="fileImg" accept="image/*">
-
 <select id="shelfSelect"></select>
 <select id="levelSelect"></select>
-
-<button onclick="addItem()">Aggiungi oggetto</button>
+<button onclick="addItem()">Aggiungi</button>
 </div>
 
 <div class="section">
@@ -190,7 +198,6 @@ max-height:100%;
 <div class="box" onclick="event.stopPropagation()">
 <h3 id="mTitle"></h3>
 <div id="mCat"></div>
-<img id="mImg" onclick="zoom(this.src)">
 </div>
 </div>
 
@@ -200,8 +207,6 @@ max-height:100%;
 </div>
 
 <script>
-
-/* ================= STATE ================= */
 
 let state = {
 scaffali: JSON.parse(localStorage.getItem("shel")) || [],
@@ -213,267 +218,197 @@ let redoStack = [];
 
 const $ = id => document.getElementById(id);
 
-/* ================= SAVE ================= */
-
+/* ===== SAVE ===== */
 function save(){
 localStorage.setItem("shel", JSON.stringify(state.scaffali));
 localStorage.setItem("inv", JSON.stringify(state.inventario));
 }
 
-/* ================= SNAPSHOT ================= */
-
-function snapshot(){
-return JSON.stringify(state);
-}
-
-function restore(s){
-state = JSON.parse(s);
-}
-
-/* ================= UNDO / REDO ================= */
+/* ===== SNAPSHOT ===== */
+function snap(){ return JSON.stringify(state); }
+function restore(s){ state = JSON.parse(s); }
 
 function pushUndo(){
-undoStack.push(snapshot());
-redoStack = [];
+undoStack.push(snap());
+redoStack=[];
 }
 
+/* ===== UNDO/REDO ===== */
 function undo(){
 if(!undoStack.length) return;
-redoStack.push(snapshot());
+redoStack.push(snap());
 restore(undoStack.pop());
-save();
-render();
+save(); render();
 }
 
 function redo(){
 if(!redoStack.length) return;
-undoStack.push(snapshot());
+undoStack.push(snap());
 restore(redoStack.pop());
-save();
-render();
+save(); render();
 }
 
-/* ================= IMAGE ================= */
-
-function fileToBase64(file){
-return new Promise(res=>{
-const r = new FileReader();
-r.onload = ()=>res(r.result);
-r.readAsDataURL(file);
-});
-}
-
-/* ================= SCAFFALI ================= */
+/* ===== SCAFFALI ===== */
 
 function addShelf(){
-const name = $("shelfName").value.trim();
-if(!name) return;
+let n=$("shelfName").value.trim();
+if(!n) return;
 
 pushUndo();
 
 state.scaffali.push({
-nome:name,
+nome:n,
 livelli:[{nome:"Ripiano 1"}]
 });
 
 $("shelfName").value="";
+save(); render();
+}
+
+function renameShelf(i,val){
+state.scaffali[i].nome = val;
 save();
+}
+
+function deleteShelf(i){
+pushUndo();
+
+state.scaffali.splice(i,1);
+state.inventario = state.inventario.filter(x=>x.shelf!=i);
+
+save(); render();
+}
+
+/* LEVELS */
+function addLevel(i){
+pushUndo();
+state.scaffali[i].livelli.push({nome:`Ripiano ${state.scaffali[i].livelli.length+1}`});
 render();
 }
 
-/* ================= OGGETTI ================= */
+function renameLevel(i,l,val){
+state.scaffali[i].livelli[l].nome = val;
+save();
+}
 
-async function addItem(){
+function deleteLevel(i,l){
+pushUndo();
 
-const name = $("itemName").value.trim();
-if(!name) return;
+state.scaffali[i].livelli.splice(l,1);
+
+state.inventario = state.inventario.filter(o=>{
+if(o.shelf!=i) return true;
+if(o.level==l) return false;
+if(o.level>l) o.level--;
+return true;
+});
+
+save(); render();
+}
+
+/* ===== ITEMS ===== */
+
+function addItem(){
+let n=$("itemName").value.trim();
+if(!n) return;
 
 pushUndo();
 
-let img="";
-const file = $("fileImg").files[0];
-if(file) img = await fileToBase64(file);
-
 state.inventario.push({
 id:Date.now(),
-nome:name,
+nome:n,
 categoria:$("itemCat").value,
-img,
 shelf:Number($("shelfSelect").value),
 level:Number($("levelSelect").value)
 });
 
 $("itemName").value="";
-$("itemCat").value="";
-$("fileImg").value="";
-
-save();
-render();
+save(); render();
 }
 
-/* ================= IMPORT / EXPORT ================= */
+/* ===== RENDER ===== */
 
-function exportData(){
-const blob = new Blob([JSON.stringify(state)], {type:"application/json"});
-const url = URL.createObjectURL(blob);
+function renderShelf(){
+let c=$("shelfView");
+c.innerHTML="";
 
-const a = document.createElement("a");
-a.href = url;
-a.download = "garage_backup.json";
-a.click();
+state.scaffali.forEach((s,i)=>{
 
-URL.revokeObjectURL(url);
-}
+let div=document.createElement("div");
+div.className="shelf";
 
-function importData(e){
-const file = e.target.files[0];
-if(!file) return;
+div.innerHTML=`
+<input value="${s.nome}" oninput="renameShelf(${i},this.value)">
+<button class="smallBtn danger" onclick="deleteShelf(${i})">Elimina scaffale</button>
+<button class="smallBtn" onclick="addLevel(${i})">+ livello</button>
+`;
 
-const r = new FileReader();
-r.onload = ev=>{
-try{
-pushUndo();
-state = JSON.parse(ev.target.result);
-save();
-render();
-}catch{
-alert("Backup non valido");
-}
-};
-r.readAsText(file);
-}
-
-/* ================= PDF EXPORT ================= */
-
-function exportPDF(){
-
-const { jsPDF } = window.jspdf;
-const doc = new jsPDF();
-
-let y = 10;
-
-doc.setFontSize(16);
-doc.text("Garage Pro - Inventario", 10, y);
-
-y += 10;
-
-state.scaffali.forEach((s, si)=>{
-
-doc.setFontSize(12);
-doc.text("Scaffale: " + s.nome, 10, y);
-y += 6;
-
-state.inventario
-.filter(i=>i.shelf==si)
-.forEach(i=>{
-
-if(y > 280){
-doc.addPage();
-y = 10;
-}
-
-doc.setFontSize(10);
-doc.text(`${i.nome} - ${i.categoria||"-"} - Ripiano ${i.level+1}`, 12, y);
-y += 6;
-
+s.livelli.forEach((l,li)=>{
+div.innerHTML+=`
+<div class="level">
+<input value="${l.nome}" oninput="renameLevel(${i},${li},this.value)">
+<button class="smallBtn danger" onclick="deleteLevel(${i},${li})">X</button>
+</div>
+`;
 });
 
-y += 6;
-
+c.appendChild(div);
 });
-
-doc.save("inventario.pdf");
 }
 
-/* ================= MODAL ================= */
-
-function openModal(i){
-
-$("mTitle").textContent = i.nome;
-$("mCat").textContent = i.categoria || "-";
-
-if(i.img){
-$("mImg").src = i.img;
-$("mImg").style.display="block";
-}else{
-$("mImg").style.display="none";
-}
-
-$("modal").style.display="flex";
-}
-
-function closeModal(){
-$("modal").style.display="none";
-}
-
-/* ================= ZOOM ================= */
-
-function zoom(src){
-$("zoomImg").src = src;
-$("zoom").style.display="flex";
-}
-
-function closeZoom(){
-$("zoom").style.display="none";
-}
-
-/* ================= RENDER ================= */
-
-function render(){
-
-let s = $("shelfView");
-s.innerHTML = "";
-state.scaffali.forEach(x=>{
-s.innerHTML += `<div><b>${x.nome}</b></div>`;
-});
-
-let c = $("items");
-c.innerHTML = "";
+function renderItems(){
+let c=$("items");
+c.innerHTML="";
 
 state.inventario.forEach(i=>{
 
-const div = document.createElement("div");
-div.className="item";
-div.onclick=()=>openModal(i);
+let d=document.createElement("div");
+d.className="item";
 
-div.innerHTML=`
-${i.img ? `<img src="${i.img}">` : `<div style="width:50px;height:50px;background:#eee;border-radius:10px"></div>`}
+d.innerHTML=`
+<div style="width:50px;height:50px;background:#eee;border-radius:10px"></div>
 <div>
 <b>${i.nome}</b><br>
 <small>${i.categoria||"-"}</small>
 </div>
 `;
 
-c.appendChild(div);
+c.appendChild(d);
 });
+}
 
-/* selectors */
-let sel = $("shelfSelect");
-sel.innerHTML="";
+function updateSelectors(){
+let s=$("shelfSelect");
+s.innerHTML="";
 
-state.scaffali.forEach((s,i)=>{
-sel.innerHTML += `<option value="${i}">${s.nome}</option>`;
+state.scaffali.forEach((x,i)=>{
+s.innerHTML+=`<option value="${i}">${x.nome}</option>`;
 });
 
 updateLevels();
 }
 
 function updateLevels(){
-let i = Number($("shelfSelect").value);
-let l = $("levelSelect");
+let i=Number($("shelfSelect").value);
+let l=$("levelSelect");
 
 l.innerHTML="";
-
 if(!state.scaffali[i]) return;
 
 state.scaffali[i].livelli.forEach((x,idx)=>{
-l.innerHTML += `<option value="${idx}">${x.nome}</option>`;
+l.innerHTML+=`<option value="${idx}">${x.nome}</option>`;
 });
 }
 
-$("shelfSelect").onchange = updateLevels;
+$("shelfSelect").onchange=updateLevels;
 
-/* INIT */
+/* MAIN */
+function render(){
+renderShelf();
+renderItems();
+updateSelectors();
+}
+
 render();
 
 </script>
