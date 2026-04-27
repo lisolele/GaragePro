@@ -3,58 +3,191 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Garage Modular</title>
+<title>Garage Pro</title>
 
 <style>
-body{margin:0;font-family:sans-serif;background:#f4f4f7}
+*{box-sizing:border-box}
 
-header{
-position:sticky;top:0;background:#fff;
-padding:10px;display:flex;justify-content:space-between;
-border-bottom:1px solid #eee;
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#f2f2f7;
 }
 
-.container{padding:12px;max-width:900px;margin:auto}
+/* HEADER */
+header{
+position:sticky;
+top:0;
+z-index:10;
+background:#fff;
+padding:12px;
+border-bottom:1px solid #eee;
+font-weight:700;
+}
 
-.section{background:#fff;padding:12px;border-radius:12px;margin-top:12px}
+/* LAYOUT */
+.container{
+padding:14px;
+max-width:900px;
+margin:auto;
+}
 
-/* generic UI */
-button{padding:8px;border-radius:8px;border:none;background:#007aff;color:#fff}
-input,select{width:100%;padding:8px;margin-top:6px}
+.section{
+background:#fff;
+padding:12px;
+border-radius:14px;
+margin-top:12px;
+box-shadow:0 6px 18px rgba(0,0,0,0.04);
+}
 
-/* items */
-.item{padding:10px;border:1px solid #eee;border-radius:10px;margin-top:8px;cursor:pointer}
+/* INPUT */
+input,select,button{
+width:100%;
+padding:10px;
+margin-top:8px;
+border-radius:12px;
+border:1px solid #ddd;
+}
 
-/* modal */
-#modal{display:none;position:fixed;inset:0;background:#0008;justify-content:center;align-items:center}
-#modalBox{background:#fff;padding:12px;border-radius:12px;width:90%;max-width:400px}
+button{
+background:#007aff;
+color:#fff;
+border:none;
+font-weight:600;
+}
 
-#zoom{display:none;position:fixed;inset:0;background:#000;justify-content:center;align-items:center}
-#zoom img{max-width:100%;max-height:100%}
+/* SCAFFALI */
+.shelf{
+background:#fff;
+border:1px solid #eee;
+padding:10px;
+border-radius:12px;
+margin-top:10px;
+}
+
+.shelfHead{
+display:flex;
+gap:6px;
+align-items:center;
+}
+
+.shelfHead input{
+flex:1;
+border:none;
+background:#f5f5f5;
+padding:6px;
+border-radius:8px;
+font-weight:600;
+}
+
+.level{
+display:flex;
+gap:6px;
+margin-top:6px;
+align-items:center;
+}
+
+.level input{
+flex:1;
+border:none;
+background:#f5f5f5;
+padding:6px;
+border-radius:8px;
+font-size:12px;
+}
+
+.smallBtn{
+width:auto;
+padding:4px 7px;
+font-size:11px;
+border-radius:8px;
+}
+
+/* ITEMS */
+.item{
+display:flex;
+gap:10px;
+align-items:center;
+padding:10px;
+margin-top:10px;
+border-radius:14px;
+border:1px solid #eee;
+background:#fff;
+}
+
+.item img{
+width:50px;
+height:50px;
+border-radius:10px;
+object-fit:cover;
+background:#eee;
+cursor:pointer;
+}
+
+/* MODAL */
+#modal{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+}
+
+.modalBox{
+background:#fff;
+padding:14px;
+border-radius:14px;
+width:90%;
+max-width:420px;
+}
+
+/* ZOOM */
+#zoom{
+display:none;
+position:fixed;
+inset:0;
+background:#000;
+justify-content:center;
+align-items:center;
+}
+
+#zoom img{
+max-width:100%;
+max-height:100%;
+}
 </style>
 </head>
 
 <body>
 
-<header>
-<div>🚗 Garage Modular</div>
-<div>
-<button onclick="UndoRedo.undo()">↩</button>
-<button onclick="UndoRedo.redo()">↪</button>
-<button onclick="ImportExport.export()">⬇</button>
-<button onclick="ImportExport.import()">⬆</button>
-</div>
-</header>
+<header>🚗 Garage Pro</header>
 
 <div class="container">
 
+<!-- SCAFFALI -->
+<div class="section">
+<h3>Scaffali</h3>
+
+<input id="shelfName" placeholder="Nome scaffale">
+<button onclick="Shelves.add()">Crea scaffale</button>
+
+<div id="shelves"></div>
+</div>
+
+<!-- OGGETTI -->
 <div class="section">
 <h3>Oggetti</h3>
 
 <input id="itemName" placeholder="Nome">
+<input id="itemCat" placeholder="Categoria">
+
 <input type="file" id="itemImg">
 
-<button onclick="Items.add()">Aggiungi</button>
+<select id="itemShelf" onchange="UI.updateLevels()"></select>
+<select id="itemLevel"></select>
+
+<button onclick="Items.add()">Aggiungi oggetto</button>
 
 <div id="items"></div>
 </div>
@@ -63,7 +196,7 @@ input,select{width:100%;padding:8px;margin-top:6px}
 
 <!-- MODAL -->
 <div id="modal" onclick="Modal.close()">
-<div id="modalBox" onclick="event.stopPropagation()"></div>
+<div class="modalBox" onclick="event.stopPropagation()"></div>
 </div>
 
 <!-- ZOOM -->
@@ -73,76 +206,25 @@ input,select{width:100%;padding:8px;margin-top:6px}
 
 <script>
 
-/* ================= CORE STATE ================= */
+/* ================= STORAGE ================= */
 
-const State = {
-data:{
-items:[],
-shelves:[]
-},
+const Store={
+data:{shelves:[],items:[]},
 set(fn){
 fn(this.data);
-Storage.save();
+localStorage.setItem("garage",JSON.stringify(this.data));
 Render.all();
 }
 };
 
-/* ================= STORAGE ================= */
+(function init(){
+const d=localStorage.getItem("garage");
+if(d) Store.data=JSON.parse(d);
+})();
 
-const Storage = {
-key:"garage_mod",
-save(){
-localStorage.setItem(this.key,JSON.stringify(State.data));
-},
-load(){
-const d=localStorage.getItem(this.key);
-if(d) State.data=JSON.parse(d);
-}
-};
+/* ================= MEDIA ================= */
 
-/* ================= RENDER ENGINE ================= */
-
-const Render = {
-items(){
-const c=document.getElementById("items");
-c.innerHTML="";
-State.data.items.forEach(i=>{
-const d=document.createElement("div");
-d.className="item";
-d.innerHTML=`<b>${i.name}</b>`;
-d.onclick=()=>Modal.open(i);
-c.appendChild(d);
-});
-},
-all(){
-this.items();
-}
-};
-
-/* ================= ITEMS MODULE ================= */
-
-const Items = {
-async add(){
-
-const name=document.getElementById("itemName").value;
-const file=document.getElementById("itemImg").files[0];
-
-let img=null;
-if(file) img=await Media.toBase64(file);
-
-State.set(s=>{
-s.items.push({
-id:Date.now(),
-name,
-img
-});
-});
-}
-};
-
-/* ================= MEDIA MODULE ================= */
-
-const Media = {
+const Media={
 toBase64(file){
 return new Promise(r=>{
 const fr=new FileReader();
@@ -159,87 +241,216 @@ document.getElementById("zoom").style.display="none";
 }
 };
 
+/* ================= SCAFFALI ================= */
+
+const Shelves={
+
+render(){
+const el=document.getElementById("shelves");
+el.innerHTML="";
+
+Store.data.shelves.forEach((s,i)=>{
+
+el.innerHTML+=`
+<div class="shelf">
+
+<div class="shelfHead">
+
+<input value="${s.name}"
+oninput="Shelves.rename(${i},this.value)">
+
+<button class="smallBtn" onclick="Shelves.remove(${i})">🗑</button>
+<button class="smallBtn" onclick="Shelves.addLevel(${i})">+</button>
+
+</div>
+
+${(s.levels||[]).map((l,li)=>`
+<div class="level">
+
+<input value="${l}"
+oninput="Shelves.renameLevel(${i},${li},this.value)">
+
+<button class="smallBtn" onclick="Shelves.removeLevel(${i},${li})">✕</button>
+
+</div>
+`).join('')}
+
+</div>
+`;
+});
+},
+
+add(){
+const v=document.getElementById("shelfName").value.trim();
+if(!v) return;
+
+Store.set(s=>{
+s.shelves.push({name:v,levels:["Ripiano 1"]});
+});
+},
+
+rename(i,v){
+Store.data.shelves[i].name=v;
+localStorage.setItem("garage",JSON.stringify(Store.data));
+},
+
+remove(i){
+Store.set(s=>{
+s.shelves.splice(i,1);
+s.items=s.items.filter(it=>it.shelf!==i);
+});
+},
+
+addLevel(i){
+Store.set(s=>{
+s.shelves[i].levels.push(`Ripiano ${s.shelves[i].levels.length+1}`);
+});
+},
+
+renameLevel(i,l,v){
+Store.data.shelves[i].levels[l]=v;
+localStorage.setItem("garage",JSON.stringify(Store.data));
+},
+
+removeLevel(i,l){
+Store.set(s=>{
+s.shelves[i].levels.splice(l,1);
+});
+}
+};
+
+/* ================= ITEMS ================= */
+
+const Items={
+
+async add(){
+const name=document.getElementById("itemName").value;
+const cat=document.getElementById("itemCat").value;
+
+if(!name) return;
+
+let img=null;
+const f=document.getElementById("itemImg").files[0];
+
+if(f) img=await Media.toBase64(f);
+
+const shelf=document.getElementById("itemShelf").value;
+const level=document.getElementById("itemLevel").value;
+
+Store.set(s=>{
+s.items.push({
+id:Date.now(),
+name,
+category:cat,
+img,
+shelf:Number(shelf),
+level:Number(level)
+});
+});
+},
+
+remove(id){
+Store.set(s=>{
+s.items=s.items.filter(x=>x.id!==id);
+});
+},
+
+render(){
+const el=document.getElementById("items");
+el.innerHTML="";
+
+Store.data.items.forEach(i=>{
+
+const sh=Store.data.shelves[i.shelf];
+const lv=sh?.levels?.[i.level]||"-";
+
+el.innerHTML+=`
+<div class="item">
+
+<img src="${i.img||''}" onclick="Modal.open(${i.id})">
+
+<div style="flex:1">
+<b>${i.name}</b><br>
+<small style="opacity:.6">
+${i.category||'-'} • ${sh?.name||'-'} • ${lv}
+</small>
+</div>
+
+<button class="smallBtn" onclick="Items.remove(${i.id})">🗑</button>
+
+</div>
+`;
+});
+}
+};
+
 /* ================= MODAL ================= */
 
-const Modal = {
-open(item){
-const box=document.getElementById("modalBox");
+const Modal={
+
+open(id){
+const i=Store.data.items.find(x=>x.id===id);
+const box=document.querySelector(".modalBox");
+
 box.innerHTML=`
-<h3>${item.name}</h3>
-${item.img?`<img src="${item.img}" style="width:100%" onclick="Media.zoom(this.src)">`:``}
+<h3>${i.name}</h3>
+<p>${i.category||'-'}</p>
+
+${i.img?`
+<img src="${i.img}"
+onclick="Media.zoom(this.src)"
+style="width:100%;border-radius:12px;cursor:zoom-in;">
+`:""}
 `;
+
 document.getElementById("modal").style.display="flex";
 },
+
 close(){
 document.getElementById("modal").style.display="none";
 }
 };
 
-/* ================= UNDO REDO ================= */
+/* ================= UI ================= */
 
-const UndoRedo = {
-stack:[],
-redo:[],
-snap(){
-return JSON.stringify(State.data);
-},
-undo(){
-if(!this.stack.length) return;
-this.redo.push(this.snap());
-State.data=JSON.parse(this.stack.pop());
-Storage.save();
-Render.all();
-},
-redo(){
-if(!this.redo.length) return;
-this.stack.push(this.snap());
-State.data=JSON.parse(this.redo.pop());
-Storage.save();
-Render.all();
-},
-push(){
-this.stack.push(this.snap());
-this.redo=[];
-}
-};
+const UI={
 
-/* wrap State.set */
-const _set=State.set.bind(State);
-State.set=function(fn){
-UndoRedo.push();
-_set(fn);
-};
+updateShelves(){
+const s=document.getElementById("itemShelf");
+s.innerHTML="";
 
-/* ================= IMPORT EXPORT ================= */
-
-const ImportExport={
-export(){
-const blob=new Blob([JSON.stringify(State.data)],{type:"application/json"});
-const a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="backup.json";
-a.click();
-},
-import(){
-const inp=document.createElement("input");
-inp.type="file";
-inp.onchange=e=>{
-const f=e.target.files[0];
-const r=new FileReader();
-r.onload=ev=>{
-State.set(s=>{
-State.data=JSON.parse(ev.target.result);
+Store.data.shelves.forEach((sh,i)=>{
+s.innerHTML+=`<option value="${i}">${sh.name}</option>`;
 });
-};
-r.readAsText(f);
-};
-inp.click();
+
+this.updateLevels();
+},
+
+updateLevels(){
+const i=document.getElementById("itemShelf").value;
+const l=document.getElementById("itemLevel");
+
+l.innerHTML="";
+
+const shelf=Store.data.shelves[i];
+if(!shelf) return;
+
+shelf.levels.forEach((lv,idx)=>{
+l.innerHTML+=`<option value="${idx}">${lv}</option>`;
+});
 }
 };
 
-/* ================= INIT ================= */
+/* ================= RENDER ================= */
 
-Storage.load();
+const Render={
+all(){
+Shelves.render();
+Items.render();
+UI.updateShelves();
+}
+};
+
 Render.all();
 
 </script>
