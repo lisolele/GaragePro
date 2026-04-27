@@ -20,18 +20,10 @@ top:0;
 background:#fff;
 border-bottom:1px solid #eee;
 z-index:10;
-}
-
-.headerBar{
-display:flex;
-justify-content:space-between;
-align-items:center;
 padding:10px 12px;
+font-weight:700;
 }
 
-.title{font-weight:700}
-
-/* layout */
 .container{padding:12px;max-width:900px;margin:auto}
 
 .section{
@@ -41,7 +33,6 @@ border-radius:14px;
 margin-top:12px;
 }
 
-/* inputs */
 input,select,button{
 width:100%;
 padding:10px;
@@ -62,37 +53,21 @@ cursor:pointer;
 .danger{background:#ff3b30}
 
 /* ===== SCAFFALI ===== */
-.shelfCard{
-margin-top:10px;
-padding:10px;
+.shelf{
 border:1px solid #eee;
 border-radius:12px;
+padding:10px;
+margin-top:10px;
 }
 
-.shelfHeader{
+.row{
 display:flex;
-justify-content:space-between;
-align-items:center;
-gap:8px;
-}
-
-.shelfHeader input{
-flex:1;
-border:none;
-background:#f5f5f5;
-padding:6px;
-border-radius:8px;
-font-size:13px;
-}
-
-.levelRow{
-display:flex;
-align-items:center;
 gap:6px;
+align-items:center;
 margin-top:6px;
 }
 
-.levelRow input{
+.row input{
 flex:1;
 border:none;
 background:#f5f5f5;
@@ -101,62 +76,50 @@ border-radius:8px;
 font-size:12px;
 }
 
-.smallBtn{
-width:auto;
-padding:4px 8px;
-font-size:11px;
-border-radius:8px;
-}
-
-/* ===== ITEMS ===== */
-.itemCard{
+/* ===== OGGETTI ===== */
+.item{
 display:flex;
 gap:10px;
 align-items:center;
 padding:10px;
-border-radius:12px;
 border:1px solid #eee;
+border-radius:12px;
 margin-top:10px;
 background:#fff;
 cursor:pointer;
 }
 
-.itemImg{
-width:48px;
-height:48px;
-background:#eee;
+.item img{
+width:48px;height:48px;
 border-radius:10px;
 object-fit:cover;
+background:#eee;
 }
 
-.itemInfo{flex:1}
-
-.itemTitle{font-weight:600;font-size:13px}
-
-.itemMeta{font-size:11px;opacity:.7;margin-top:3px}
+.meta{font-size:11px;opacity:.7}
 
 /* ===== MODAL ===== */
 #modal{
 display:none;
 position:fixed;
 inset:0;
-background:rgba(0,0,0,0.55);
+background:rgba(0,0,0,.55);
 justify-content:center;
 align-items:center;
 z-index:9999;
 }
 
-.modalBox{
+.box{
 background:#fff;
 width:90%;
 max-width:420px;
-border-radius:16px;
+border-radius:14px;
 padding:14px;
 }
 
-.modalImg{
+.box img{
 width:100%;
-border-radius:12px;
+border-radius:10px;
 margin-top:10px;
 cursor:zoom-in;
 }
@@ -166,7 +129,7 @@ cursor:zoom-in;
 display:none;
 position:fixed;
 inset:0;
-background:black;
+background:#000;
 z-index:10000;
 justify-content:center;
 align-items:center;
@@ -181,39 +144,30 @@ max-height:100%;
 
 <body>
 
-<header>
-<div class="headerBar">
-<div class="title">🚗 Garage Pro</div>
-</div>
-</header>
+<header>🚗 Garage Pro (Refactored Core)</header>
 
 <div class="container">
 
-<!-- SCAFFALI -->
 <div class="section">
 <h3>Scaffali</h3>
-
 <input id="shelfName" placeholder="Nome scaffale">
-<button onclick="addShelf()">Crea scaffale</button>
-
+<button onclick="addShelf()">+ scaffale</button>
 <div id="shelfView"></div>
 </div>
 
-<!-- OGGETTI -->
 <div class="section">
 <h3>Oggetti</h3>
 
-<input id="nome" placeholder="Nome">
-<input id="categoria" placeholder="Categoria">
-<input id="img" placeholder="URL immagine (opzionale)">
+<input id="itemName" placeholder="Nome">
+<input id="itemCat" placeholder="Categoria">
+<input id="itemImg" placeholder="URL immagine">
 
-<select id="selectShelf"></select>
-<select id="selectLevel"></select>
+<select id="shelfSelect"></select>
+<select id="levelSelect"></select>
 
-<button onclick="addItem()">Aggiungi</button>
+<button onclick="addItem()">+ oggetto</button>
 </div>
 
-<!-- LISTA -->
 <div class="section">
 <h3>Lista</h3>
 <div id="items"></div>
@@ -223,10 +177,10 @@ max-height:100%;
 
 <!-- MODAL -->
 <div id="modal" onclick="closeModal()">
-<div class="modalBox" onclick="event.stopPropagation()">
+<div class="box" onclick="event.stopPropagation()">
 <h3 id="mTitle"></h3>
 <div id="mCat"></div>
-<img id="mImg" class="modalImg" onclick="openZoom(this.src)">
+<img id="mImg" onclick="zoom(this.src)">
 </div>
 </div>
 
@@ -237,50 +191,92 @@ max-height:100%;
 
 <script>
 
-/* ===== STATE ===== */
-let inventario = JSON.parse(localStorage.getItem("inv")) || [];
-let scaffali = JSON.parse(localStorage.getItem("shel")) || [];
+/* =====================================================
+🧠 STATE CENTRALIZZATO (CORE DEL SISTEMA)
+===================================================== */
+
+const state = {
+scaffali: JSON.parse(localStorage.getItem("shel")) || [],
+inventario: JSON.parse(localStorage.getItem("inv")) || []
+};
 
 const $ = id => document.getElementById(id);
 
-/* ===== SAVE (FIX CRITICO) ===== */
+/* =====================================================
+💾 PERSISTENZA
+===================================================== */
+
 function save(){
-localStorage.setItem("inv", JSON.stringify(inventario));
-localStorage.setItem("shel", JSON.stringify(scaffali));
+localStorage.setItem("shel", JSON.stringify(state.scaffali));
+localStorage.setItem("inv", JSON.stringify(state.inventario));
 }
 
-/* ===== SCAFFALI ===== */
+/* =====================================================
+🔁 RENDER UNICO (REGOLA FONDAMENTALE)
+===================================================== */
+
+function render(){
+renderShelves();
+renderItems();
+renderSelectors();
+}
+
+/* =====================================================
+🗄 SCAFFALI CRUD
+===================================================== */
+
 function addShelf(){
+const name = $("shelfName").value.trim();
+if(!name) return;
 
-let n=$("shelfName").value.trim();
-if(!n) return;
-
-scaffali.push({
-nome:n,
+state.scaffali.push({
+nome:name,
 livelli:[{nome:"Ripiano 1"}]
 });
 
 $("shelfName").value="";
+save();
+render();
+}
+
+function renameShelf(i,val){
+state.scaffali[i].nome = val;
+save();
+}
+
+function deleteShelf(i){
+
+state.inventario = state.inventario.filter(o=>o.shelf!==i);
+state.scaffali.splice(i,1);
 
 save();
 render();
 }
 
-/* ===== LIVELLI ===== */
+/* =====================================================
+📦 RIPIANI CRUD
+===================================================== */
+
 function addLevel(i){
-scaffali[i].livelli.push({nome:`Ripiano ${scaffali[i].livelli.length+1}`});
+state.scaffali[i].livelli.push({
+nome:`Ripiano ${state.scaffali[i].livelli.length+1}`
+});
 save();
 render();
+}
+
+function renameLevel(i,l,val){
+state.scaffali[i].livelli[l].nome = val;
+save();
 }
 
 function deleteLevel(i,l){
 
-scaffali[i].livelli.splice(l,1);
+state.scaffali[i].livelli.splice(l,1);
 
-/* riallinea oggetti */
-inventario = inventario.filter(o=>{
-if(o.shelf!=i) return true;
-if(o.level==l) return false;
+state.inventario = state.inventario.filter(o=>{
+if(o.shelf!==i) return true;
+if(o.level===l) return false;
 if(o.level>l) o.level--;
 return true;
 });
@@ -289,42 +285,49 @@ save();
 render();
 }
 
-function renameLevel(i,l,val){
-scaffali[i].livelli[l].nome = val;
-save();
-}
+/* =====================================================
+📦 OGGETTI CRUD
+===================================================== */
 
-/* ===== OGGETTI ===== */
 function addItem(){
 
-let nome=$("nome").value.trim();
-if(!nome) return;
+const name = $("itemName").value.trim();
+if(!name) return;
 
-inventario.push({
+state.inventario.push({
 id:Date.now(),
-nome,
-categoria:$("categoria").value,
-img:$("img").value||"",
-shelf:Number($("selectShelf").value),
-level:Number($("selectLevel").value)
+nome:name,
+categoria:$("itemCat").value,
+img:$("itemImg").value || "",
+shelf:Number($("shelfSelect").value),
+level:Number($("levelSelect").value)
 });
 
-$("nome").value="";
-$("categoria").value="";
-$("img").value="";
+$("itemName").value="";
+$("itemCat").value="";
+$("itemImg").value="";
 
 save();
 render();
 }
 
-/* ===== POPUP (FIX) ===== */
-function openModal(i){
+function deleteItem(id){
+state.inventario = state.inventario.filter(i=>i.id!==id);
+save();
+render();
+}
 
-$("mTitle").textContent=i.nome;
-$("mCat").textContent=i.categoria||"-";
+/* =====================================================
+🖼 POPUP OGGETTO
+===================================================== */
 
-if(i.img){
-$("mImg").src=i.img;
+function openModal(item){
+
+$("mTitle").textContent = item.nome;
+$("mCat").textContent = item.categoria || "";
+
+if(item.img){
+$("mImg").src = item.img;
 $("mImg").style.display="block";
 }else{
 $("mImg").style.display="none";
@@ -337,9 +340,12 @@ function closeModal(){
 $("modal").style.display="none";
 }
 
-/* ===== ZOOM ===== */
-function openZoom(src){
-$("zoomImg").src=src;
+/* =====================================================
+🔍 ZOOM IMMAGINE
+===================================================== */
+
+function zoom(src){
+$("zoomImg").src = src;
 $("zoom").style.display="flex";
 }
 
@@ -347,34 +353,34 @@ function closeZoom(){
 $("zoom").style.display="none";
 }
 
-/* ===== RENDER SCAFFALI (FIX UI RIPIANI) ===== */
-function renderShelf(){
+/* =====================================================
+🧾 RENDER SCAFFALI
+===================================================== */
 
-let c=$("shelfView");
+function renderShelves(){
+
+const c = $("shelfView");
 c.innerHTML="";
 
-scaffali.forEach((s,i)=>{
+state.scaffali.forEach((s,i)=>{
 
-let div=document.createElement("div");
-div.className="shelfCard";
+const div = document.createElement("div");
+div.className="shelf";
 
 div.innerHTML=`
-<div class="shelfHeader">
-<input value="${s.nome}"
-oninput="scaffali[${i}].nome=this.value; save();">
-<button onclick="addLevel(${i})" class="smallBtn">+ ripiano</button>
+<div class="row">
+<input value="${s.nome}" oninput="renameShelf(${i},this.value)">
+<button class="danger" onclick="deleteShelf(${i})">×</button>
 </div>
+
+<button onclick="addLevel(${i})">+ ripiano</button>
 `;
 
 s.livelli.forEach((l,idx)=>{
-
 div.innerHTML+=`
-<div class="levelRow">
-<input value="${l.nome}"
-oninput="renameLevel(${i},${idx},this.value)">
-
-<button class="danger smallBtn"
-onclick="deleteLevel(${i},${idx})">×</button>
+<div class="row">
+<input value="${l.nome}" oninput="renameLevel(${i},${idx},this.value)">
+<button class="danger" onclick="deleteLevel(${i},${idx})">×</button>
 </div>
 `;
 });
@@ -383,42 +389,49 @@ c.appendChild(div);
 });
 }
 
-/* ===== ITEMS ===== */
+/* =====================================================
+📦 RENDER OGGETTI
+===================================================== */
+
 function renderItems(){
 
-let c=$("items");
+const c = $("items");
 c.innerHTML="";
 
-inventario.forEach(i=>{
+state.inventario.forEach(i=>{
 
-let shelf=scaffali[i.shelf]?.nome||"-";
-let level=scaffali[i.shelf]?.livelli?.[i.level]?.nome||"-";
+const shelf = state.scaffali[i.shelf]?.nome || "-";
+const level = state.scaffali[i.shelf]?.livelli?.[i.level]?.nome || "-";
 
-let d=document.createElement("div");
-d.className="itemCard";
-d.onclick=()=>openModal(i);
+const div = document.createElement("div");
+div.className="item";
 
-d.innerHTML=`
-${i.img?`<img src="${i.img}" class="itemImg">`:`<div class="itemImg"></div>`}
+div.onclick = ()=>openModal(i);
 
-<div class="itemInfo">
-<div class="itemTitle">${i.nome}</div>
-<div class="itemMeta">${i.categoria||"-"} • ${shelf} • ${level}</div>
+div.innerHTML=`
+${i.img ? `<img src="${i.img}">` : `<div style="width:48px;height:48px;background:#eee;border-radius:10px"></div>`}
+
+<div style="flex:1">
+<div><b>${i.nome}</b></div>
+<div class="meta">${i.categoria||"-"} • ${shelf} • ${level}</div>
 </div>
 `;
 
-c.appendChild(d);
+c.appendChild(div);
 });
 }
 
-/* ===== SELECT ===== */
-function updateSelectors(){
+/* =====================================================
+📌 SELECTORS SAFE
+===================================================== */
 
-let s=$("selectShelf");
+function renderSelectors(){
+
+const s = $("shelfSelect");
 s.innerHTML="";
 
-scaffali.forEach((sh,i)=>{
-s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
+state.scaffali.forEach((x,i)=>{
+s.innerHTML+=`<option value="${i}">${x.nome}</option>`;
 });
 
 updateLevels();
@@ -426,26 +439,23 @@ updateLevels();
 
 function updateLevels(){
 
-let i=Number($("selectShelf").value);
+const i = Number($("shelfSelect").value);
+const l = $("levelSelect");
 
-let l=$("selectLevel");
 l.innerHTML="";
 
-if(!scaffali[i]) return;
+if(!state.scaffali[i]) return;
 
-scaffali[i].livelli.forEach((lv,idx)=>{
-l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
+state.scaffali[i].livelli.forEach((x,idx)=>{
+l.innerHTML+=`<option value="${idx}">${x.nome}</option>`;
 });
 }
 
-$("selectShelf").onchange=updateLevels;
+$("shelfSelect").onchange = updateLevels;
 
-/* ===== MAIN ===== */
-function render(){
-renderShelf();
-renderItems();
-updateSelectors();
-}
+/* =====================================================
+🚀 INIT
+===================================================== */
 
 render();
 
