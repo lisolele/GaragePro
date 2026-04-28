@@ -120,6 +120,26 @@ function changeLevels(i,d){
     render();
 }
 
+function deleteShelf(index){
+    if(!confirm("Eliminare scaffale e tutti gli oggetti dentro?")) return;
+
+    // rimuove oggetti collegati
+    inventario = inventario.filter(o => o.shelf !== index);
+
+    // rimuove scaffale
+    scaffali.splice(index, 1);
+
+    // aggiorna indici scaffali negli oggetti rimasti
+    inventario.forEach(o => {
+        if(o.shelf > index){
+            o.shelf--;
+        }
+    });
+
+    save();
+    render();
+}
+    
 /* ===== OGGETTI ===== */
 async function salva(){
     const nome=$("nome").value.trim();
@@ -235,9 +255,10 @@ function renderShelves(){
         d.innerHTML=`
         <div class="shelfHeader">
             <input value="${escapeHTML(s.nome)}" oninput="scaffali[${i}].nome=this.value;save();">
-            <div>
-                <button onclick="changeLevels(${i},1)">+</button>
-                <button class="danger" onclick="changeLevels(${i},-1)">-</button>
+            <div style="display:flex;gap:6px;">
+                <button onclick="event.stopPropagation();changeLevels(${i},1)">+</button>
+                <button class="danger" onclick="event.stopPropagation();changeLevels(${i},-1)">-</button>
+                <button class="danger" onclick="event.stopPropagation();deleteShelf(${i})">🗑</button>
             </div>
         </div>
         `;
