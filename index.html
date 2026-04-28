@@ -54,6 +54,11 @@ img.thumb{ width:50px;height:50px;object-fit:cover;border-radius:8px; }
 <div id="items"></div>
 </div>
 
+<div class="section">
+<h3>📦 Senza scaffale</h3>
+<div id="itemsNoShelf"></div>
+</div>
+
 </div>
 
 <script>
@@ -220,6 +225,7 @@ function renderItems(){
     const q=$("search").value.toLowerCase();
 
     inventario.forEach(i=>{
+        if(i.shelf == null) return;
         if(q && !(i.nome||"").toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
         const shelfName = i.shelf != null 
             ? (scaffali[i.shelf]?.nome || "—") 
@@ -330,6 +336,7 @@ $("selectShelf").addEventListener("change",updateLevels);
 function render(){
     renderShelves();
     renderItems();
+    renderNoShelf();
     updateSelectors();
 }
 
@@ -357,6 +364,44 @@ render();
 
 function closeModal(){
     $("modal").style.display = "none";
+}
+
+function renderNoShelf(){
+    const c = $("itemsNoShelf");
+    c.innerHTML = "";
+
+    const q = $("search").value.toLowerCase();
+
+    inventario.forEach(i => {
+        if(i.shelf != null) return; // 👈 solo senza scaffale
+
+        if(q && !(i.nome||"").toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
+
+        const div = document.createElement("div");
+
+        div.style.cursor = "pointer";
+        div.onclick = () => openModal(i);
+
+        div.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:center;">
+            ${i.img ? `<img src="${i.img}" class="thumb">` : ""}
+            <div>
+                <b>${escapeHTML(i.nome)}</b><br>
+                <span class="small">
+                    ${escapeHTML(i.categoria || "")}<br>
+                    📍 Senza scaffale
+                </span>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:6px;">
+            <button onclick="event.stopPropagation();editItem(${i.id})">✏️</button>
+            <button class="danger" onclick="event.stopPropagation();deleteItem(${i.id})">🗑</button>
+        </div>
+        `;
+
+        c.appendChild(div);
+    });
 }
     
 </script>
