@@ -196,14 +196,15 @@ function deleteItem(id){
 function renderItems(){
     const c=$("items");
     c.innerHTML="";
-
+    
     const q=$("search").value.toLowerCase();
 
     inventario.forEach(i=>{
         if(q && !(i.nome||"").toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
 
         const div=document.createElement("div");
-
+        div.style.cursor = "pointer";
+        div.onclick = () => openModal(i);
        div.innerHTML = `
         <div style="display:flex;gap:10px;align-items:center;">
             ${i.img ? `<img src="${i.img}" class="thumb">` : ""}
@@ -300,6 +301,56 @@ function render(){
 }
 
 render();
+
+    function openModal(item){
+    const shelfName = scaffali[item.shelf]?.nome || "-";
+    const level = item.level != null ? item.level + 1 : "-";
+
+    $("modalContent").innerHTML = `
+        ${item.img ? `<img src="${item.img}" style="width:100%;border-radius:12px;margin-bottom:10px;">` : ""}
+        <h3>${escapeHTML(item.nome)}</h3>
+        <div class="small">Categoria: ${escapeHTML(item.categoria || "-")}</div>
+        <div class="small">Scaffale: ${escapeHTML(shelfName)}</div>
+        <div class="small">Ripiano: ${level}</div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+            <button onclick="editItem(${item.id});closeModal()">✏️ Modifica</button>
+            <button class="danger" onclick="deleteItem(${item.id});closeModal()">🗑 Elimina</button>
+        </div>
+    `;
+
+    $("modal").style.display = "flex";
+}
+
+function closeModal(){
+    $("modal").style.display = "none";
+}
+    
 </script>
+
+<div id="modal" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.4);
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+    ">
+
+    <div style="
+    background:white;
+    padding:20px;
+    border-radius:18px;
+    width:90%;
+    max-width:400px;
+    ">
+
+    <div id="modalContent"></div>
+
+    <button onclick="closeModal()">Chiudi</button>
+
+    </div>
+</div>
 </body>
 </html>
