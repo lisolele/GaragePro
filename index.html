@@ -204,16 +204,19 @@ function renderItems(){
 
         const div=document.createElement("div");
 
-        div.innerHTML=`
+       div.innerHTML = `
         <div style="display:flex;gap:10px;align-items:center;">
-            ${i.img?`<img src="${i.img}" class="thumb">`:""}
+            ${i.img ? `<img src="${i.img}" class="thumb">` : ""}
             <div>
                 <b>${escapeHTML(i.nome)}</b><br>
-                <span class="small">${escapeHTML(i.categoria||"")}</span>
+                <span class="small">${escapeHTML(i.categoria || "")}</span>
             </div>
         </div>
-        <button onclick="editItem(${i.id})">✏️</button>
-        <button class="danger" onclick="deleteItem(${i.id})">🗑</button>
+
+        <div style="display:flex;gap:6px;">
+            <button onclick="event.stopPropagation();editItem(${i.id})">✏️</button>
+            <button class="danger" onclick="event.stopPropagation();deleteItem(${i.id})">🗑</button>
+        </div>
         `;
 
         c.appendChild(div);
