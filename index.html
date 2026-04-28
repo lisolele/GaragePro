@@ -121,20 +121,20 @@ function changeLevels(i,d){
 }
 
 function deleteShelf(index){
-    if(!confirm("Eliminare scaffale e tutti gli oggetti dentro?")) return;
+    if(!confirm("Eliminare scaffale? Gli oggetti resteranno senza posizione.")) return;
 
-    // rimuove oggetti collegati
-    inventario = inventario.filter(o => o.shelf !== index);
+    // aggiorna oggetti
+    inventario.forEach(o => {
+        if(o.shelf === index){
+            o.shelf = null;   // 👈 senza scaffale
+            o.level = null;
+        } else if(o.shelf > index){
+            o.shelf--; // riallinea indici
+        }
+    });
 
     // rimuove scaffale
     scaffali.splice(index, 1);
-
-    // aggiorna indici scaffali negli oggetti rimasti
-    inventario.forEach(o => {
-        if(o.shelf > index){
-            o.shelf--;
-        }
-    });
 
     save();
     render();
@@ -147,7 +147,7 @@ async function salva(){
 
     const shelf=$("selectShelf").value;
     const level=$("selectLevel").value;
-    if(shelf===""||level==="") return alert("Seleziona scaffale e ripiano");
+    if(level === "" && shelf !== "") return alert("Seleziona ripiano");
 
     let img=currentImg;
     const f=$("foto").files[0];
@@ -221,16 +221,22 @@ function renderItems(){
 
     inventario.forEach(i=>{
         if(q && !(i.nome||"").toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
-
+        const shelfName = i.shelf != null 
+            ? (scaffali[i.shelf]?.nome || "—") 
+            : "Senza scaffale";
         const div=document.createElement("div");
         div.style.cursor = "pointer";
         div.onclick = () => openModal(i);
        div.innerHTML = `
         <div style="display:flex;gap:10px;align-items:center;">
-            ${i.img ? `<img src="${i.img}" class="thumb">` : ""}
+             ${i.img ? `<img src="${i.img}" class="thumb">` : ""}
+    
             <div>
                 <b>${escapeHTML(i.nome)}</b><br>
-                <span class="small">${escapeHTML(i.categoria || "")}</span>
+                <span class="small">
+                    ${escapeHTML(i.categoria || "")}<br>
+                    📍 ${escapeHTML(shelfName || "—")}
+                </span>
             </div>
         </div>
 
@@ -286,6 +292,7 @@ function updateSelectors(){
     const l=$("selectLevel");
 
     s.innerHTML="";
+    s.innerHTML = `<option value="">-- senza scaffale --</option>`;
 
     if(!scaffali.length){
         s.innerHTML="<option value=''>--</option>";
@@ -305,7 +312,12 @@ function updateLevels(){
     const l=$("selectLevel");
 
     l.innerHTML="";
-
+    
+    if(i === "") {
+        l.innerHTML = "<option value=''>--</option>";
+        return;
+    }
+    
     if(!scaffali[i]) return;
 
     for(let j=0;j<scaffali[i].livelli;j++){
