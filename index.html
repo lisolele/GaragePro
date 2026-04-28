@@ -6,489 +6,700 @@
 <title>Garage Pro</title>
 
 <style>
-*{box-sizing:border-box}
+*{ box-sizing:border-box; }
 
 body{
 margin:0;
-font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+font-family:-apple-system, BlinkMacSystemFont, sans-serif;
 background:#f2f2f7;
-color:#111;
 }
 
-/* HEADER */
 header{
+padding:16px;
+text-align:center;
+background:white;
+font-weight:700;
 position:sticky;
 top:0;
-background:#fff;
-border-bottom:1px solid #eee;
 z-index:10;
+border-bottom:1px solid #eee;
 }
 
-.headerBar{
-display:flex;
-justify-content:space-between;
-padding:12px 14px;
-align-items:center;
-padding:10px 12px;
-}
-
-.title{font-weight:700}
-.title{
-font-weight:700;
-font-size:15px;
-}
-
-/* UNDO REDO SMALL */
-.undoRedo{
-display:flex;
-gap:6px;
-}
-
-.undoRedo button{
-width:28px;
-height:28px;
-padding:0;
-border-radius:8px;
-font-size:12px;
-background:#1c1c1e;
-color:#fff;
-border:none;
-padding:6px 10px;
-border-radius:10px;
-font-size:12px;
-display:flex;
-align-items:center;
-justify-content:center;
-}
-
-/* layout */
-.container{padding:14px;max-width:900px;margin:auto}
-/* LAYOUT */
 .container{
-padding:12px;
+padding:14px;
 max-width:900px;
 margin:auto;
 }
 
 .section{
-background:#fff;
-padding:16px;
-border-radius:16px;
+background:white;
+padding:18px;
 margin-top:14px;
+border-radius:18px;
 box-shadow:0 6px 18px rgba(0,0,0,0.04);
-padding:14px;
-border-radius:14px;
-margin-top:12px;
-box-shadow:0 4px 14px rgba(0,0,0,0.04);
 }
 
 input,select,button{
-h3{
-margin:0 0 10px 0;
-font-size:14px;
-}
-
-/* INPUTS */
-input,select{
 width:100%;
 padding:12px;
 margin-top:8px;
 border-radius:12px;
-padding:10px;
-margin-top:6px;
-border-radius:10px;
 border:1px solid #ddd;
-font-size:13px;
+font-size:15px;
 }
 
 button{
-width:100%;
-padding:10px;
-margin-top:8px;
-border-radius:10px;
-border:none;
 background:#007aff;
-color:#fff;
+color:white;
 border:none;
 font-weight:600;
-font-size:13px;
+cursor:pointer;
 }
 
-.danger{background:#ff3b30}
+.danger{ background:#ff3b30; }
 
-/* scaffali */
-/* SCAFFALI */
-.shelfCard{
-margin-top:10px;
+.shelfGrid{
+display:flex;
+gap:12px;
+overflow-x:auto;
+}
+
+.shelf{
+min-width:280px;
+background:#f9f9fb;
+border-radius:18px;
 padding:12px;
-padding:10px;
-border:1px solid #eee;
-border-radius:12px;
-background:#fff;
 }
 
 .shelfHeader{
 display:flex;
 justify-content:space-between;
 align-items:center;
-gap:8px;
-}
-
-.shelfHeader strong{
-font-size:13px;
-}
-
-/* LEVEL ROW */
-.levelRow{
-display:flex;
-gap:6px;
-align-items:center;
-margin-top:6px;
-}
-
-.levelRow input{
-flex:1;
-border:none;
-background:#f5f5f5;
-padding:6px;
-border-radius:8px;
-font-size:12px;
-}
-
-/* items */
-/* SMALL BUTTONS */
-.smallBtn{
-width:26px;
-height:26px;
-padding:0;
-border-radius:8px;
-font-size:11px;
-display:flex;
-align-items:center;
-justify-content:center;
-border:none;
-cursor:pointer;
-}
-
-.smallBtn.danger{background:#ff3b30;color:#fff}
-.smallBtn.blue{background:#007aff;color:#fff}
-
-/* ITEMS */
-.itemCard{
-display:flex;
-gap:12px;
 gap:10px;
-align-items:center;
-padding:12px;
+}
+
+.level{
+background:white;
+margin-top:10px;
 padding:10px;
 border-radius:12px;
 border:1px solid #eee;
-border-radius:14px;
-margin-top:10px;
-background:#fff;
 }
 
-.itemImg{
-width:56px;
-height:56px;
-width:48px;
-height:48px;
-background:#eee;
+.small{
+font-size:11px;
+opacity:0.6;
+}
+
+#items div{
+background:white;
+padding:10px;
+margin-top:8px;
 border-radius:12px;
-object-fit:cover;
-border-radius:10px;
+border:1px solid #eee;
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
 
-.itemInfo{flex:1}
-
-.itemTitle{font-weight:600}
-.itemTitle{
-font-weight:600;
-font-size:13px;
-}
-
-.itemMeta{font-size:12px;opacity:.7;margin-top:4px}
-.itemMeta{
-font-size:11px;
-opacity:.7;
-margin-top:3px;
-}
-
-/* category */
-/* BADGE */
-.categoryBadge{
-padding:3px 8px;
-border-radius:8px;
-font-size:11px;
-padding:2px 6px;
+mark{
+background:#ffe066;
+padding:2px 4px;
 border-radius:6px;
-font-size:10px;
-color:#fff;
-font-weight:600;
+}
+
+img.thumb{
+    width:50px;
+    height:50px;
+    object-fit:cover;
+    border-radius:8px;
+}
+
+#preview{
+    width:80px;
+    margin-top:8px;
+    border-radius:10px;
+    display:none;
+}
+
+#undoBar{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#1c1c1e;
+color:white;
+padding:10px 12px;
+border-radius:14px;
+display:flex;
+gap:10px;
+z-index:999;
+}
+
+/* MODAL */
+#modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.4);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+}
+
+.modalBox{
+    background:white;
+    padding:20px;
+    border-radius:18px;
+    width:90%;
+    max-width:400px;
+    transition:transform .25s ease;
+}
+
+/* ZOOM */
+#zoomOverlay{
+    position:fixed;
+    inset:0;
+    background:black;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:10000;
+}
+
+#zoomOverlay img{
+    max-width:95%;
+    max-height:95%;
+    border-radius:12px;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-<div class="headerBar">
-<div class="title">🚗 Garage Pro</div>
-
-<div class="undoRedo">
-<button onclick="undo()">↩️</button>
-<button onclick="redo()">↪️</button>
-<button onclick="undo()">↩</button>
-<button onclick="redo()">↪</button>
-</div>
-</div>
-</header>
+<header>🚗 Garage Pro</header>
 
 <div class="container">
 
 <div class="section">
-<h3>Scaffali</h3>
+<h3>🗄️ Scaffali</h3>
 <input id="shelfName" placeholder="Nome scaffale">
-<button onclick="addShelf()">Crea</button>
-<button onclick="addShelf()">Crea scaffale</button>
-<div id="shelfView"></div>
+<button onclick="aggiungiScaffale()">Crea scaffale</button>
+<div id="shelfView" class="shelfGrid"></div>
 </div>
 
 <div class="section">
-<h3>Oggetti</h3>
+<h3>📦 Oggetti</h3>
 
-<input id="search" placeholder="Cerca..." oninput="renderItems()">
+<input id="search" placeholder="🔍 Cerca..." oninput="renderItems()">
 
 <input id="nome" placeholder="Nome">
 <input id="categoria" placeholder="Categoria">
 
+<input type="file" id="foto" accept="image/*">
+<img id="preview">
+
 <select id="selectShelf"></select>
 <select id="selectLevel"></select>
 
-<button onclick="addItem()">Salva</button>
-<button onclick="addItem()">Salva oggetto</button>
+<button onclick="salva()">Salva oggetto</button>
 </div>
 
 <div class="section">
-<h3>Lista</h3>
+<h3>📋 Oggetti</h3>
 <div id="items"></div>
 </div>
 
 </div>
 
+<div id="undoBar">
+<button onclick="undo()">↩️ Undo</button>
+<button onclick="redo()">↪️ Redo</button>
+</div>
+
+<script>
+<!-- MODAL -->
+<div id="modal">
+    <div class="modalBox">
+        <div id="modalContent"></div>
+        <button onclick="closeModal()">Chiudi</button>
+    </div>
+</div>
+
+/* ===== SAFE LOAD ===== */
+let inventario = [];
+let scaffali = [];
+<!-- ZOOM -->
+<div id="zoomOverlay" onclick="closeZoom()">
+    <img id="zoomImg">
+</div>
+
+try {
+    inventario = JSON.parse(localStorage.getItem("inv")) || [];
+    scaffali = JSON.parse(localStorage.getItem("shel")) || [];
+} catch {}
 <script>
 
 /* ===== STATE ===== */
-let inventario = JSON.parse(localStorage.getItem("inv"))||[];
-let scaffali = JSON.parse(localStorage.getItem("shel"))||[];
+let undoStack = [];
+let redoStack = [];
+/* ===== LOAD ===== */
+let inventario=[], scaffali=[];
+try{
+    inventario=JSON.parse(localStorage.getItem("inv"))||[];
+    scaffali=JSON.parse(localStorage.getItem("shel"))||[];
+}catch{}
 
+const $ = id => document.getElementById(id);
 let undoStack=[], redoStack=[];
+let currentImg=null;
 
 const $=id=>document.getElementById(id);
 
+/* ===== SAVE ===== */
 function save(){
-localStorage.setItem("inv",JSON.stringify(inventario));
-localStorage.setItem("shel",JSON.stringify(scaffali));
+    localStorage.setItem("inv", JSON.stringify(inventario));
+    localStorage.setItem("shel", JSON.stringify(scaffali));
+    localStorage.setItem("inv",JSON.stringify(inventario));
+    localStorage.setItem("shel",JSON.stringify(scaffali));
 }
 
+/* ===== STATE SNAPSHOT ===== */
+/* ===== STATE ===== */
 function saveState(){
-undoStack.push(JSON.stringify({inventario,scaffali}));
-redoStack=[];
+undoStack.push({
+        inventario: structuredClone(inventario),
+        scaffali: structuredClone(scaffali)
+        inventario:structuredClone(inventario),
+        scaffali:structuredClone(scaffali)
+});
+    redoStack = [];
+    redoStack=[];
 }
 
+/* ===== UNDO / REDO ===== */
 /* ===== UNDO REDO ===== */
 function undo(){
 if(!undoStack.length) return;
-redoStack.push(JSON.stringify({inventario,scaffali}));
-let s=JSON.parse(undoStack.pop());
-inventario=s.inventario;
-scaffali=s.scaffali;
-save();
-render();
+
+redoStack.push(structuredClone({inventario,scaffali}));
+
+    const s = undoStack.pop();
+    inventario = s.inventario;
+    scaffali = s.scaffali;
+
+    save();
+    render();
+    let s=undoStack.pop();
+    inventario=s.inventario;
+    scaffali=s.scaffali;
+    save(); render();
 }
 
 function redo(){
 if(!redoStack.length) return;
-undoStack.push(JSON.stringify({inventario,scaffali}));
-let s=JSON.parse(redoStack.pop());
-inventario=s.inventario;
-scaffali=s.scaffali;
-save();
-render();
+
+undoStack.push(structuredClone({inventario,scaffali}));
+
+    const s = redoStack.pop();
+    inventario = s.inventario;
+    scaffali = s.scaffali;
+
+    save();
+    render();
+    let s=redoStack.pop();
+    inventario=s.inventario;
+    scaffali=s.scaffali;
+    save(); render();
 }
 
-/* ===== SCAFFALI ===== */
-function addShelf(){
-let n=$("shelfName").value.trim();
-if(!n) return;
+/* ===== ESCAPE HTML ===== */
+/* ===== UTILS ===== */
+function escapeHTML(str){
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#039;'
+    return String(str).replace(/[&<>"']/g,m=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+}[m]));
+}
 
-saveState();
+/* ===== HIGHLIGHT SAFE ===== */
+function escapeRegExp(string){
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRegExp(str){
+    return str.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+}
+function highlight(text,q){
+    if(!q) return escapeHTML(text);
+    return escapeHTML(text).replace(new RegExp(`(${escapeRegExp(q)})`,"gi"),"<mark>$1</mark>");
+}
+function toBase64(file){
+    return new Promise((res,rej)=>{
+        let r=new FileReader();
+        r.readAsDataURL(file);
+        r.onload=()=>res(r.result);
+        r.onerror=rej;
+    });
+}
 
-scaffali.push({
-nome:n,
-livelli:[{nome:"Ripiano 1"}]
+function highlight(text, query){
+    if(!query) return escapeHTML(text);
+
+    const safe = escapeRegExp(query);
+    const regex = new RegExp(`(${safe})`, "gi");
+/* ===== PREVIEW ===== */
+$("foto").addEventListener("change",e=>{
+    let f=e.target.files[0];
+    if(f){
+        $("preview").src=URL.createObjectURL(f);
+        $("preview").style.display="block";
+    }
 });
 
+/* ===== MODAL ===== */
+function openModal(item){
+    const shelfName=scaffali[item.shelf]?.nome||"-";
+    const level=item.level!=null?(item.level+1):"-";
+
+    $("modalContent").innerHTML=`
+        ${item.img?`<img src="${item.img}" onclick="zoomImage('${item.img}')" style="width:100%;border-radius:12px;margin-bottom:10px;cursor:zoom-in;">`:""}
+        <h3>${escapeHTML(item.nome)}</h3>
+        <div class="small">Categoria: ${escapeHTML(item.categoria||"-")}</div>
+        <div class="small">Scaffale: ${escapeHTML(shelfName)}</div>
+        <div class="small">Ripiano: ${level}</div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+            <button onclick="editItem(${item.id});closeModal()">✏️</button>
+            <button class="danger" onclick="deleteItem(${item.id});closeModal()">🗑</button>
+        </div>
+    `;
+    $("modal").style.display="flex";
+}
+function closeModal(){
+    $("modal").style.display="none";
+    document.querySelector(".modalBox").style.transform="translateY(0)";
+}
+
+    return escapeHTML(text).replace(regex, "<mark>$1</mark>");
+/* ===== ZOOM ===== */
+function zoomImage(src){
+    $("zoomImg").src=src;
+    $("zoomOverlay").style.display="flex";
+}
+function closeZoom(){
+    $("zoomOverlay").style.display="none";
+}
+
+/* ===== SWIPE DOWN ===== */
+let startY=0,currentY=0,isDragging=false;
+
+$("modal").addEventListener("touchstart",e=>{
+    startY=e.touches[0].clientY;
+    isDragging=true;
+});
+$("modal").addEventListener("touchmove",e=>{
+    if(!isDragging) return;
+    currentY=e.touches[0].clientY;
+    let diff=currentY-startY;
+    if(diff>0){
+        document.querySelector(".modalBox").style.transform=`translateY(${diff}px)`;
+    }
+});
+$("modal").addEventListener("touchend",()=>{
+    isDragging=false;
+    let diff=currentY-startY;
+    if(diff>120) closeModal();
+    else document.querySelector(".modalBox").style.transform="translateY(0)";
+});
+
+/* ===== SCAFFALI ===== */
+function aggiungiScaffale(){
+    const name = $("shelfName").value.trim();
+    if(!name) return alert("Nome obbligatorio");
+
+    let n=$("shelfName").value.trim();
+    if(!n) return alert("Nome obbligatorio");
+saveState();
+
+    scaffali.push({ nome:name, livelli:1 });
+
+    scaffali.push({nome:n,livelli:1});
 $("shelfName").value="";
 render();
 }
 
-function addLevel(i){
+function changeLevels(i,delta){
+function changeLevels(i,d){
 saveState();
-scaffali[i].livelli.push({nome:`Ripiano ${scaffali[i].livelli.length+1}`});
-render();
+
+    scaffali[i].livelli += delta;
+    if(scaffali[i].livelli < 1) scaffali[i].livelli = 1;
+
+    scaffali[i].livelli=Math.max(1,scaffali[i].livelli+d);
+inventario.forEach(o=>{
+if(o.shelf===i && o.level>=scaffali[i].livelli){
+            o.level = scaffali[i].livelli - 1;
+            o.level=scaffali[i].livelli-1;
 }
-
-function deleteLevel(i,l){
-saveState();
-
-scaffali[i].livelli.splice(l,1);
-
-inventario = inventario.filter(o=>{
-if(o.shelf!=i) return true;
-if(o.level==l) return false;
-if(o.level>l) o.level--;
-return true;
 });
 
 render();
 }
 
-function renameLevel(i,l,val){
-scaffali[i].livelli[l].nome = val;
-save(); // ✅ FIX CRITICO
-save();
-}
+/* ===== OGGETTI ===== */
+function salva(){
 
-/* ===== ITEMS ===== */
-function addItem(){
+    const nome = $("nome").value.trim();
+async function salva(){
+    let nome=$("nome").value.trim();
+if(!nome) return alert("Nome obbligatorio");
 
-let nome=$("nome").value.trim();
-if(!nome) return;
+    const shelf = $("selectShelf").value;
+    const level = $("selectLevel").value;
+    let shelf=$("selectShelf").value;
+    let level=$("selectLevel").value;
+
+    if(shelf==="" || level===""){
+        return alert("Seleziona scaffale e ripiano");
+    }
+    if(shelf===""||level==="") return alert("Seleziona");
 
 saveState();
+
+    let img=currentImg;
+    let f=$("foto").files[0];
+    if(f) img=await toBase64(f);
 
 inventario.push({
 id:Date.now(),
 nome,
 categoria:$("categoria").value,
-shelf:Number($("selectShelf").value||0),
-level:Number($("selectLevel").value||0)
+shelf:Number(shelf),
+        level:Number(level)
+        level:Number(level),
+        img
 });
 
+    currentImg=null;
 $("nome").value="";
 $("categoria").value="";
+    $("selectLevel").value="";
+    $("foto").value="";
+    $("preview").style.display="none";
 
 render();
 }
 
+function editItem(id){
+
+    const i = inventario.find(x=>x.id==id);
+    let i=inventario.find(x=>x.id==id);
+if(!i) return;
+
+saveState();
+
+$("nome").value=i.nome;
+$("categoria").value=i.categoria;
+
+$("selectShelf").value=i.shelf;
+
+updateLevels();
+$("selectLevel").value=i.level;
+
+    inventario = inventario.filter(x=>x.id!=id);
+    currentImg=i.img;
+
+    if(i.img){
+        $("preview").src=i.img;
+        $("preview").style.display="block";
+    }
+
+    inventario=inventario.filter(x=>x.id!=id);
+render();
+}
+
+function deleteItem(id){
+saveState();
+    inventario = inventario.filter(i=>i.id!=id);
+    inventario=inventario.filter(i=>i.id!=id);
+render();
+}
+
+/* ===== RENDER ITEMS ===== */
 /* ===== RENDER ===== */
-function renderShelf(){
+function renderItems(){
+    let c=$("items"); c.innerHTML="";
+    let q=$("search").value.toLowerCase();
 
-let c=$("shelfView");
-c.innerHTML="";
+    const c = $("items");
+    c.innerHTML="";
 
+    const q = $("search").value.trim().toLowerCase();
+    inventario.forEach(i=>{
+        if(q && !i.nome.toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q)) return;
+
+    inventario
+    .filter(i=>{
+        if(!q) return true;
+        return (i.nome||"").toLowerCase().includes(q) ||
+               (i.categoria||"").toLowerCase().includes(q);
+    })
+    .forEach(i=>{
+        let d=document.createElement("div");
+        d.style.cursor="pointer";
+        d.onclick=()=>openModal(i);
+
+        const div=document.createElement("div");
+
+        div.innerHTML=`
+        d.innerHTML=`
+        <div style="display:flex;gap:10px;align-items:center;">
+            ${i.img?`<img src="${i.img}" class="thumb">`:""}
+           <div>
+               <b>${highlight(i.nome,q)}</b><br>
+               <span class="small">${highlight(i.categoria||"",q)}</span>
+           </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+            <button onclick="event.stopPropagation();editItem(${i.id})">✏️</button>
+            <button class="danger" onclick="event.stopPropagation();deleteItem(${i.id})">🗑</button>
+        </div>`;
+
+            <div style="display:flex;gap:6px;">
+                <button onclick="editItem(${i.id})">✏️</button>
+                <button onclick="deleteItem(${i.id})" class="danger">🗑</button>
+            </div>
+        `;
+
+        c.appendChild(div);
+        c.appendChild(d);
+});
+}
+
+/* ===== RENDER SCAFFALI ===== */
+function renderShelves(){
+
+    const c=$("shelfView");
+    c.innerHTML="";
+
+    let c=$("shelfView"); c.innerHTML="";
 scaffali.forEach((s,i)=>{
 
-let div=document.createElement("div");
-div.className="shelfCard";
+        const div=document.createElement("div");
+        div.className="shelf";
 
-div.innerHTML=`
-<div class="shelfHeader">
-<strong>${s.nome}</strong>
-<button onclick="addLevel(${i})">➕ ripiano</button>
-<button class="smallBtn blue" onclick="addLevel(${i})">+</button>
-</div>
-`;
+        div.innerHTML=`
+            <div class="shelfHeader">
+                <input value="${escapeHTML(s.nome)}"
+                    style="border:none;background:transparent;font-weight:700;width:60%;"
+                    oninput="scaffali[${i}].nome=this.value; save();"
+                >
 
-(s.livelli||[]).forEach((l,idx)=>{
-div.innerHTML+=`
-<div class="levelRow">
-<input value="${l.nome}"
-oninput="renameLevel(${i},${idx},this.value)">
-<button class="danger" onclick="deleteLevel(${i},${idx})">🗑</button>
-<button class="smallBtn danger" onclick="deleteLevel(${i},${idx})">×</button>
-</div>
-`;
-});
+                <div style="display:flex;gap:6px;">
+                    <button onclick="changeLevels(${i},1)">+</button>
+                    <button onclick="changeLevels(${i},-1)" class="danger">-</button>
+                </div>
+        let d=document.createElement("div");
+        d.className="shelf";
+        d.innerHTML=`
+        <div class="shelfHeader">
+            <input value="${escapeHTML(s.nome)}"
+            oninput="scaffali[${i}].nome=this.value;save();"
+            style="border:none;background:transparent;font-weight:700;width:60%;">
+            <div style="display:flex;gap:6px;">
+                <button onclick="changeLevels(${i},1)">+</button>
+                <button class="danger" onclick="changeLevels(${i},-1)">-</button>
+           </div>
+        `;
 
-c.appendChild(div);
+        </div>`;
+for(let l=0;l<s.livelli;l++){
+
+            const lv=document.createElement("div");
+            let lv=document.createElement("div");
+lv.className="level";
+
+            const items = inventario.filter(o=>o.shelf===i && o.level===l);
+
+            lv.innerHTML=`
+                <div class="small">Ripiano ${l+1}</div>
+                <div>
+                    ${items.map(o=>"• "+escapeHTML(o.nome)).join("<br>") || "<span class='small'>(vuoto)</span>"}
+                </div>
+            `;
+
+            div.appendChild(lv);
+            let items=inventario.filter(o=>o.shelf===i && o.level===l);
+            lv.innerHTML=`<div class="small">Ripiano ${l+1}</div>
+            <div>${items.map(o=>"• "+escapeHTML(o.nome)).join("<br>")||"(vuoto)"}</div>`;
+            d.appendChild(lv);
+}
+
+        c.appendChild(div);
+        c.appendChild(d);
 });
 }
 
-function renderItems(){
-
-let c=$("items");
-c.innerHTML="";
-
-let q=$("search").value.toLowerCase();
-
-inventario.forEach(i=>{
-
-if(q && !i.nome.toLowerCase().includes(q) && !(i.categoria||"").toLowerCase().includes(q))
-return;
-
-let shelf=scaffali[i.shelf]?.nome||"-";
-let level=scaffali[i.shelf]?.livelli?.[i.level]?.nome||"Ripiano";
-
-let d=document.createElement("div");
-d.className="itemCard";
-
-d.innerHTML=`
-<div class="itemImg"></div>
-
-<div class="itemInfo">
-<div class="itemTitle">${i.nome}</div>
-<div class="itemMeta">
-<span class="categoryBadge" style="background:#999">${i.categoria||"-"}</span>
-• ${shelf} • ${level}
-</div>
-</div>
-`;
-
-c.appendChild(d);
-});
-}
-
+/* ===== SELECT ===== */
 function updateSelectors(){
 
-let s=$("selectShelf");
+    const s=$("selectShelf");
+    const l=$("selectLevel");
+
+    let s=$("selectShelf"),l=$("selectLevel");
 s.innerHTML="";
 
+    if(scaffali.length===0){
+        s.innerHTML="<option value=''>-- nessuno --</option>";
+        l.innerHTML="<option value=''>--</option>";
+    if(!scaffali.length){
+        s.innerHTML="<option value=''>--</option>";
+        l.innerHTML="<option>--</option>";
+return;
+}
+
 scaffali.forEach((sh,i)=>{
-s.innerHTML+=`<option value="${i}">${sh.nome}</option>`;
+s.innerHTML+=`<option value="${i}">${escapeHTML(sh.nome)}</option>`;
 });
 
 updateLevels();
 }
 
-/* ✅ FIX: safe + sempre aggiornato */
 function updateLevels(){
 
-let i=Number($("selectShelf").value);
-let l=$("selectLevel");
+    const i=$("selectShelf").value;
+    const l=$("selectLevel");
 
+    let i=$("selectShelf").value;
+    let l=$("selectLevel");
 l.innerHTML="";
 
-if(!scaffali[i] || !scaffali[i].livelli) return;
-if(!scaffali[i]) return;
+    if(!scaffali[i]){
+        l.innerHTML="<option value=''>--</option>";
+        return;
+    }
 
-scaffali[i].livelli.forEach((lv,idx)=>{
-l.innerHTML+=`<option value="${idx}">${lv.nome}</option>`;
-});
+    if(!scaffali[i]) return;
+for(let j=0;j<scaffali[i].livelli;j++){
+l.innerHTML+=`<option value="${j}">Ripiano ${j+1}</option>`;
+}
 }
 
-$("selectShelf").onchange=updateLevels;
+$("selectShelf").addEventListener("change", updateLevels);
+$("selectShelf").addEventListener("change",updateLevels);
 
-/* ===== MAIN ===== */
+/* ===== INIT ===== */
 function render(){
-renderShelf();
+renderShelves();
 renderItems();
 updateSelectors();
 }
 
 render();
-
 </script>
 
 </body>
